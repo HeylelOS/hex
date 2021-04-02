@@ -107,13 +107,12 @@ hex_lua_panic(lua_State *L) {
 
 static bool
 hex_lua_runtime_init(lua_State *L, const struct hex_args *args) {
-	extern const char hex_lua_runtime_start, hex_lua_runtime_end;
 
 	luaL_checkversion(L);
 	lua_openlibs(L);
 	lua_atpanic(L, hex_lua_panic);
 
-	switch (luaL_loadbufferx(L, &hex_lua_runtime_start, &hex_lua_runtime_end - &hex_lua_runtime_start, args->progname, "b")) {
+	switch (luaL_loadbufferx(L, hex_runtime, hex_runtime_size, args->progname, "b")) {
 	case LUA_OK:
 		if (lua_pcall(L, 0, 0, 0) == LUA_OK) {
 			return true;

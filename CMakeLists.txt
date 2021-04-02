@@ -11,38 +11,40 @@ set(CMAKE_C_STANDARD_REQUIRED True)
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 
-set(CMAKE_OBJCOPY_TARGET "elf64-x86-64" CACHE STRING "Output format for the objcopy command.")
-
-include_directories(include)
-
 find_package(Lua 5.3.0 REQUIRED)
 
-# Compile lua runtime into lua binary
-file(GLOB_RECURSE HEX_LUA_SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/hex/*.lua)
+include_directories(include ${LUA_INCLUDE_DIR})
+
+# Compiling tools
+
+file(GLOB_RECURSE BIN2SRC_SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/tools/bin2src/*.c)
+add_executable(bin2src ${BIN2SRC_SOURCES})
+
+# Compile lua runtime into lua binary and then encode to C source file
+# creating the bin2src tool to handle embedding data was the most portable way I found
+# as we're not guaranteed on the behaviour of each platform's linker nor the presence of objcopy.
+
+file(GLOB_RECURSE LIBHEX_LUA_SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/libhex/*.lua)
+
 add_custom_command(
 	OUTPUT luac.out
-	COMMAND luac -s -o ${CMAKE_CURRENT_BINARY_DIR}/luac.out ${HEX_LUA_SOURCES}
-	DEPENDS ${HEX_LUA_SOURCES}
+	COMMAND luac -s -o ${PROJECT_BINARY_DIR}/luac.out ${LIBHEX_LUA_SOURCES}
+	DEPENDS ${LIBHEX_LUA_SOURCES}
 )
 
-# Convenience to replace the path relative created symbols to fixed ones
-string(REGEX REPLACE "[^A-Za-z0-9_]" "_" HEX_LUAC_OUT_SYMBOL ${CMAKE_CURRENT_BINARY_DIR}/luac.out)
-# Create a binary object for the lua runtime to link it with binary
 add_custom_command(
-	OUTPUT luac.out.o
-	COMMAND ${CMAKE_OBJCOPY} --input-target binary --output-target ${CMAKE_OBJCOPY_TARGET}
-		--redefine-sym=_binary_${HEX_LUAC_OUT_SYMBOL}_start=hex_lua_runtime_start
-		--redefine-sym=_binary_${HEX_LUAC_OUT_SYMBOL}_end=hex_lua_runtime_end
-		--strip-symbol=_binary_${HEX_LUAC_OUT_SYMBOL}_size
-		${CMAKE_CURRENT_BINARY_DIR}/luac.out ${CMAKE_CURRENT_BINARY_DIR}/luac.out.o
-	DEPENDS luac.out
+	OUTPUT luac.out.c
+	COMMAND bin2src -S hex_runtime -o ${PROJECT_BINARY_DIR}/luac.out.c -- ${PROJECT_BINARY_DIR}/luac.out
+	DEPENDS ${PROJECT_BINARY_DIR}/luac.out
 )
+
+# Compile executable and library
 
 file(GLOB_RECURSE HEX_SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/hex/*.c)
-add_executable(hex ${HEX_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/luac.out.o)
+add_executable(hex ${HEX_SOURCES})
 
 file(GLOB_RECURSE LIBHEX_SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/libhex/*.c)
-add_library(libhex ${LIBHEX_SOURCES})
+add_library(libhex ${LIBHEX_SOURCES} ${PROJECT_BINARY_DIR}/luac.out.c)
 
 target_link_libraries(hex PUBLIC libhex)
 target_link_libraries(libhex PUBLIC ${LUA_LIBRARIES})

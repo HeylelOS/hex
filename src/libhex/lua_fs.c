@@ -10,7 +10,9 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
 
 static int
 lua_fs_isreg(lua_State *L) {
@@ -226,27 +228,67 @@ fs_mount_flags(lua_State *L) {
 		const char *name;
 		const unsigned long mask;
 	} flags[] = {
+#ifdef __GLIBC__
+		{ "rdonly",      MS_RDONLY },
+		{ "nosuid",      MS_NOSUID },
+		{ "nodev",       MS_NODEV },
+		{ "noexec",      MS_NOEXEC },
+		{ "synchronous", MS_SYNCHRONOUS },
 		{ "remount",     MS_REMOUNT },
+		{ "mandlock",    MS_MANDLOCK },
+		{ "dirsync",     MS_DIRSYNC },
+		{ "nosymfollow", MS_NOSYMFOLLOW },
+		{ "noatime",     MS_NOATIME },
+		{ "nodiratime",  MS_NODIRATIME },
 		{ "bind",        MS_BIND },
-		{ "shared",      MS_SHARED },
+		{ "move",        MS_MOVE },
+		{ "rec",         MS_REC },
+		{ "silent",      MS_SILENT },
+		{ "posixacl",    MS_POSIXACL },
+		{ "unbindable",  MS_UNBINDABLE },
 		{ "private",     MS_PRIVATE },
 		{ "slave",       MS_SLAVE },
-		{ "unbindable",  MS_UNBINDABLE },
-		{ "move",        MS_MOVE },
-		{ "dirsync",     MS_DIRSYNC },
-		{ "lazytime",    MS_LAZYTIME },
-		{ "mandlock",    MS_MANDLOCK },
-		{ "noatime",     MS_NOATIME },
-		{ "nodev",       MS_NODEV },
-		{ "nodiratime",  MS_NODIRATIME },
-		{ "noexec",      MS_NOEXEC },
-		{ "nosuid",      MS_NOSUID },
-		{ "rdonly",      MS_RDONLY },
-		{ "rec",         MS_REC },
+		{ "shared",      MS_SHARED },
 		{ "relatime",    MS_RELATIME },
-		{ "silent",      MS_SILENT },
+		{ "kernmount",   MS_KERNMOUNT },
+		{ "i-version",   MS_I_VERSION },
 		{ "strictatime", MS_STRICTATIME },
-		{ "synchronous", MS_SYNCHRONOUS },
+		{ "lazytime",    MS_LAZYTIME },
+		{ "active",      MS_ACTIVE },
+		{ "nouser",      MS_NOUSER },
+#elif defined(__APPLE__)
+		{ "rdonly",           MNT_RDONLY },
+		{ "synchronous",      MNT_SYNCHRONOUS },
+		{ "noexec",           MNT_NOEXEC },
+		{ "nosuid",           MNT_NOSUID },
+		{ "nodev",            MNT_NODEV },
+		{ "union",            MNT_UNION },
+		{ "async",            MNT_ASYNC },
+		{ "cprotect",         MNT_CPROTECT },
+		{ "exported",         MNT_EXPORTED },
+		{ "removable",        MNT_REMOVABLE },
+		{ "quarantine",       MNT_QUARANTINE },
+		{ "local",            MNT_LOCAL },
+		{ "quota",            MNT_QUOTA },
+		{ "rootfs",           MNT_ROOTFS },
+		{ "dovolfs",          MNT_DOVOLFS },
+		{ "dontbrowse",       MNT_DONTBROWSE },
+		{ "ignore-ownership", MNT_IGNORE_OWNERSHIP },
+		{ "automounted",      MNT_AUTOMOUNTED },
+		{ "journaled",        MNT_JOURNALED },
+		{ "nouserxattr",      MNT_NOUSERXATTR },
+		{ "defwrite",         MNT_DEFWRITE },
+		{ "multilabel",       MNT_MULTILABEL },
+		{ "noatime",          MNT_NOATIME },
+		{ "snapshot",         MNT_SNAPSHOT },
+		{ "strictatime",      MNT_STRICTATIME },
+		{ "update",           MNT_UPDATE },
+		{ "noblock",          MNT_NOBLOCK },
+		{ "reload",           MNT_RELOAD },
+		{ "force",            MNT_FORCE },
+#else
+#error "Unsupported platform's mount flags"
+#endif
 	};
 	unsigned long mountflags = 0;
 
@@ -279,9 +321,17 @@ lua_fs_mount(lua_State *L) {
 	const char * const source = luaL_checkstring(L, 1), * const target = luaL_checkstring(L, 2), * const filesystemtype  = luaL_checkstring(L, 3);
 	const unsigned long mountflags = fs_mount_flags(L);
 
+#ifdef __GLIBC__
 	if (mount(source, target, filesystemtype, mountflags, NULL) != 0) {
 		return luaL_error(L, "fs.mount: mount %s %s %s: %s", source, target, filesystemtype, strerror(errno));
 	}
+#elif defined(__APPLE__)
+	if (mount(filesystemtype, target, mountflags, NULL) != 0) {
+		return luaL_error(L, "fs.mount: mount %s %s %s: %s", source, target, filesystemtype, strerror(errno));
+	}
+#else
+#error "Unsupported platform's mount"
+#endif
 
 	return 0;
 }
@@ -290,9 +340,19 @@ static int
 lua_fs_umount(lua_State *L) {
 	const char * const target = luaL_checkstring(L, 1);
 
+#ifdef __GLIBC__
 	if (umount(target) != 0) {
 		return luaL_error(L, "fs.umount: umount %s: %s", target, strerror(errno));
 	}
+#elif defined(__APPLE__)
+	const unsigned long mountflags = fs_mount_flags(L);
+
+	if (unmount(target, mountflags) != 0) {
+		return luaL_error(L, "fs.mount: unmount %s %X: %s", target, mountflags, strerror(errno));
+	}
+#else
+#error "Unsupported platform's umount"
+#endif
 
 	return 0;
 }

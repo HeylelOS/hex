@@ -1,9 +1,9 @@
 #ifndef HEX_LUA_H
 #define HEX_LUA_H
 
-#include <lua5.3/lua.h>
-#include <lua5.3/lauxlib.h>
-#include <lua5.3/lualib.h>
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
 
 int
 luaopen_fs(lua_State *L);
@@ -19,6 +19,9 @@ luaopen_hash(lua_State *L);
 
 int
 luaopen_hex(lua_State *L);
+
+extern const char hex_runtime[];
+extern const unsigned long hex_runtime_size;
 
 /* HEX_LUA_H */
 #endif

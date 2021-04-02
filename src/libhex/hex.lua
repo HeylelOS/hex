@@ -152,7 +152,7 @@ hex.hinderfilesystem = function(filesystem)
 
 	for i = 1, mountpointscount do
 		local mountpoint = mountpoints[i]
-		local source = mountpoint.source
+		local source = mountpoint.source or ''
 		local target = mountpoint.target or fs.path(root, source)
 
 		fs.mkdirs(target)

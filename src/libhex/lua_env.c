@@ -41,10 +41,15 @@ lua_env_set(lua_State *L) {
 static int
 lua_env_clear(lua_State *L) {
 
+#ifdef __GLIBC__
 	if (clearenv() != 0) {
 		lua_pushliteral(L, "env.clear: Unable to clear environment");
 		return lua_error(L);
 	}
+#else
+	extern char **environ;
+	environ = NULL;
+#endif
 
 	return 0;
 }

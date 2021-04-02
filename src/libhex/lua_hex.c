@@ -279,6 +279,7 @@ hex_deny(const char *path) {
 
 static int
 lua_hex_hinderuser(lua_State *L) {
+#ifdef __linux__
 	/* We must keep ids now, because after unshare(2) unmapped ids
 	   are resolved to the overflow user/group id */
 	const uid_t uid = getuid();
@@ -306,6 +307,13 @@ lua_hex_hinderuser(lua_State *L) {
 	if (hex_id_map("/proc/self/gid_map", newgid, gid) != 0) {
 		return luaL_error(L, "hex.hinderuser: Unable to map group id %d to %d: %s", newgid, gid, strerror(errno));
 	}
+#else
+#warning "hex.hinderuser is not supported, user isolation will not be available"
+	lua_getglobal(L, "log");
+	lua_getfield(L, -1, "warning");
+	lua_pushliteral(L, "User isolation is not supported on this platform!");
+	lua_call(L, 1, 0);
+#endif
 
 	return 0;
 }
