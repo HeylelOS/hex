@@ -1,23 +1,21 @@
 
 hex.rituals['cmake-build'] = function(name, material)
-	local build = material.build
+	local setup = material.setup.build
 
-	if build then
-		local options = build.options
+	if setup then
+		local options = setup.options
 
 		if options then
-			local build_tool_options = build.build_tool_options
+			local build_tool_options = setup.build_tool_options
 
 			if build_tool_options then
-				hex.cast('cmake', table.unpack(options), '--build', material.build, '--', table.unpack(build_tool_options))
+				hex.cast('cmake', '--build', material.build, table.unpack(options), '--', table.unpack(build_tool_options))
 			else
-				hex.cast('cmake', table.unpack(options), '--build', material.build)
+				hex.cast('cmake', '--build', material.build, table.unpack(options))
 			end
-
-			return
 		end
+	else
+		hex.cast('cmake', '--build', material.build)
 	end
-
-	hex.cast('cmake', '--build', material.build)
 end
 

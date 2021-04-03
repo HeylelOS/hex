@@ -41,8 +41,9 @@ Hex supports the following isolation capabilites:
 
 Hex intends to support the following systems, for the specified rituals:
 - [x] CMake (configure, build, install)
-- [ ] GNU autoconf (configure, build, install)
-- [ ] Raw UNIX Makefiles (build, install)
+- [x] UNIX configure/make (configure, build, install) (according to the GNU autotooled configure/make behaviours)
+- [ ] Kbuild (configure, build, install)
+- [ ] QMake (configure)
 - [ ] Ninja (build)
 
 If you have suggestions or ideas concerning other build systems, feel free to come forward.

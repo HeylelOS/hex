@@ -1,19 +1,21 @@
 
 hex.rituals['configure'] = function(name, material)
-	local delegate = nil
+	local ritual = material.override['configure']
 
-	do
+	if not ritual then
 		local source = material.source
 
 		if fs.isreg(fs.path(source, 'CMakeLists.txt')) then
-			delegate = 'cmake-configure'
+			ritual = hex.rituals['cmake-configure']
+		elseif fs.isexe(fs.path(source, 'configure')) then
+			ritual = hex.rituals['unix-configure']
 		end
 	end
 
-	if delegate then
-		hex.rituals[delegate](name, material)
+	if ritual then
+		ritual(name, material)
 	else
-		error('Unable to determine configuration system for ', name)
+		error('Unable to determine configuration ritual for '..name)
 	end
 end
 

@@ -23,9 +23,11 @@ hex.melt = function(crucible, source)
 	fs.mkdirs(build)
 
 	local material = {
-		dependencies = { };
-		source = source;
 		build = build;
+		source = source;
+		dependencies = { };
+		override = { };
+		setup = { };
 		env = { };
 	}
 

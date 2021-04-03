@@ -1,19 +1,21 @@
 
 hex.rituals['install'] = function(name, material)
-	local delegate = nil
+	local ritual = material.override['install']
 
-	do
+	if not ritual then
 		local build = material.build
 
 		if fs.isreg(fs.path(build, 'CMakeCache.txt')) then
-			delegate = 'cmake-install'
+			ritual = hex.rituals['cmake-install']
+		elseif fs.isreg(fs.path(build, 'Makefile')) then
+			ritual = hex.rituals['unix-install']
 		end
 	end
 
-	if delegate then
-		hex.rituals[delegate](name, material)
+	if ritual then
+		ritual(name, material)
 	else
-		error('Unable to determine install system for ', name)
+		error('Unable to determine install ritual for '..name)
 	end
 end
 

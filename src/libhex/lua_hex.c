@@ -120,7 +120,7 @@ lua_hex_cast(lua_State *L) {
 		/* We cast const char *argv[] to char *argv[] because we're in the child anyway,
 		and I can't really believe execve does modify the argument array */
 		execvp(argv[0], (void *)argv);
-		perror("execve");
+		fprintf(stderr, "execve %s: %s\n", *argv, strerror(errno));
 		exit(-1);
 	case -1:
 		return luaL_error(L, "hex.cast: fork: %s", strerror(errno));

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(Hello LANGUAGES C)
+project(cmake-hello LANGUAGES C)
 
-add_executable(Hello hello.c)
+add_executable(cmake-hello cmake-hello.c)
 
-install(TARGETS Hello RUNTIME)
+install(TARGETS cmake-hello RUNTIME)

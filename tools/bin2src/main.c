@@ -130,11 +130,15 @@ bin2src_dump_file(const char *input, unsigned long pagesize, unsigned long *size
 			*sizep += readval;
 		}
 
-		if (readval == 0) {
+		if (readval != 0) {
+			warn("read %s", input);
+		} else {
 			retval = 0;
 		}
 
 		close(fd);
+	} else {
+		warn("open %s", input);
 	}
 
 	return retval;
@@ -157,7 +161,6 @@ main(int argc, char **argv) {
 			const char * const input = *argpos;
 
 			if (bin2src_dump_file(input, pagesize, &size, outp) != 0) {
-				warn("open/read %s", input);
 				break;
 			}
 

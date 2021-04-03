@@ -1,0 +1,15 @@
+
+.PHONY: all clean install
+
+all: unix-hello
+
+clean:
+	rm -f unix-hello
+
+install: all
+	mkdir -p $(DESTDIR)$(bindir)
+	cp unix-hello $(DESTDIR)$(bindir)
+
+%: $(srcdir)/%.c
+	$(CC) $(CFLAGS) -o $@ $^
+
