@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <err.h>
 
 #include "hex/lua.h"
 
@@ -38,12 +39,13 @@ struct hex_args {
 
 static void
 hex_usage(const struct hex_args *args, int status) {
-	fprintf(stderr, "usage: %s rituals...\n", args->progname);
+	fprintf(stderr, "usage: %s [-C <dir>] rituals...\n", args->progname);
 	exit(status);
 }
 
 static const struct hex_args
 hex_parse_args(int argc, char **argv) {
+	const char *workdir = NULL;
 	struct hex_args args = {
 		.progname = strrchr(*argv, '/'),
 	};
@@ -55,11 +57,14 @@ hex_parse_args(int argc, char **argv) {
 		args.progname++;
 	}
 
-	while (c = getopt(argc, argv, ":h"), c != -1) {
+	while (c = getopt(argc, argv, ":hC:"), c != -1) {
 		switch (c) {
 		case 'h':
 			fputs(version, stdout);
 			hex_usage(&args, EXIT_SUCCESS);
+		case 'C':
+			workdir = optarg;
+			break;
 		case ':':
 			fprintf(stderr, "%s: -%c: Missing argument\n", args.progname, optopt);
 			hex_usage(&args, EXIT_FAILURE);
@@ -72,6 +77,12 @@ hex_parse_args(int argc, char **argv) {
 	if (argc == optind) {
 		fprintf(stderr, "%s: Missing input file(s)\n", args.progname);
 		hex_usage(&args, EXIT_FAILURE);
+	}
+
+	if (workdir != NULL) {
+		if (chdir(workdir) != 0) {
+			err(EXIT_FAILURE, "chdir %s", workdir);
+		}
 	}
 
 	return args;
@@ -101,8 +112,7 @@ lua_openlibs(lua_State *L) {
 
 static int
 hex_lua_panic(lua_State *L) {
-	fprintf(stderr, "Congratulation, you managed to panic the interpreter!: %s\n", luaL_checkstring(L, -1));
-	exit(EXIT_FAILURE);
+	err(EXIT_FAILURE, "Congratulation, you managed to panic the interpreter!: %s\n", luaL_checkstring(L, -1));
 }
 
 static bool

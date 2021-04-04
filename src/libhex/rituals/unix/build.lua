@@ -1,7 +1,6 @@
 
 hex.rituals['unix-build'] = function(name, material)
 	local setup = material.setup.build
-	local workdir = fs.pwd()
 
 	fs.chdir(material.build)
 
@@ -20,7 +19,5 @@ hex.rituals['unix-build'] = function(name, material)
 	else
 		hex.cast('make')
 	end
-
-	fs.chdir(workdir)
 end
 

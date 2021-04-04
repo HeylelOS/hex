@@ -19,7 +19,7 @@ hex.melt = function(crucible, source)
 		error('hex.melt: Invalid source (hidden file or root): '..source)
 	end
 
-	local build = fs.path(crucible.molten, 'build', name)
+	local build = fs.path(crucible.molten, 'tailings', name)
 	fs.mkdirs(build)
 
 	local material = {
@@ -126,25 +126,20 @@ hex.perform = function(crucible, ...)
 	-- Acquire incantation from arguments
 	local incantation = hex.incantation(...)
 	local incantationcount = #incantation
-	-- Summoned functions
-	local summoned = { }
 
 	for i = 1, listcount do
-		local offset = (i - 1) * incantationcount
 		local name = list[i]
 
 		for j = 1, incantationcount do
-			summoned[offset + j] = function()
+			hex.invoke(function()
 				local material = crucible.melted[name]
 				hex.hinder(crucible.shackle)
 				env.fill(pairs(crucible.env))
 				env.fill(pairs(material.env))
 				incantation[j](name, material)
-			end
+			end)
 		end
 	end
-
-	hex.invoke(summoned)
 end
 
 hex.hinderfilesystem = function(filesystem)

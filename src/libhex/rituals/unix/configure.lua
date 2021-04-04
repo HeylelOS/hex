@@ -1,7 +1,6 @@
 
 hex.rituals['unix-configure'] = function(name, material)
-	local workdir = fs.pwd()
-	local script = fs.path(workdir, material.source, 'configure')
+	local script = fs.path(fs.pwd(), material.source, 'configure')
 
 	fs.chdir(material.build)
 
@@ -16,7 +15,5 @@ hex.rituals['unix-configure'] = function(name, material)
 	else
 		hex.cast(script)
 	end
-
-	fs.chdir(workdir)
 end
 

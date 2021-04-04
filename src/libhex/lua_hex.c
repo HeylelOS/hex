@@ -36,8 +36,7 @@ lua_hex_exit(lua_State *L) {
 		status = luaL_checkoption(L, 1, NULL, statuses);
 		break;
 	default:
-		luaL_argerror(L, 1, "Invalid type");
-		break;
+		return luaL_argerror(L, 1, "Invalid type");
 	}
 
 	exit(status);
@@ -62,31 +61,9 @@ hex_unpack_arguments(lua_State *L) {
 }
 
 static int
-hex_wait_pid(lua_State *L, pid_t pid) {
-	int status;
+hex_enchantment_semantic(lua_State *L, const char *enchantment) {
 
-	/* Wait for process termination, and fail if failure */
-	assert(waitpid(pid, &status, 0) == pid);
-
-	if (WIFSIGNALED(status)) {
-		const int signo = WTERMSIG(status);
-		return luaL_error(L, "hex: Terminated with signal %d (%s)", signo, strsignal(signo));
-	}
-
-	if (WIFEXITED(status)) {
-		const int exitstatus = WEXITSTATUS(status);
-		if (exitstatus != 0) {
-			return luaL_error(L, "hex: Exited with code %d", exitstatus);
-		}
-	}
-
-	return 0;
-}
-
-static int
-lua_hex_cast(lua_State *L) {
-
-	/* The first argument determines the semantic of the cast */
+	/* The first argument determines the semantic of the enchantment */
 	switch (lua_type(L, 1)) {
 	case LUA_TSTRING:
 		/* Arguments only semantic, everything is already on the stack */
@@ -94,8 +71,7 @@ lua_hex_cast(lua_State *L) {
 	case LUA_TTABLE:
 		/* Array semantic, must unpack content on stack */
 		if (!hex_unpack_arguments(L)) {
-			lua_pushliteral(L, "hex.cast: Array semantic expects one argument");
-			return lua_error(L);
+			return luaL_error(L, "%s: Array semantic expects one argument", enchantment);
 		}
 		break;
 	case LUA_TFUNCTION:
@@ -103,12 +79,38 @@ lua_hex_cast(lua_State *L) {
 		lua_call(L, lua_gettop(L) - 1, LUA_MULTRET);
 		break;
 	default:
-		return luaL_argerror(L, 1, "hex.cast: Invalid semantic");
+		return luaL_argerror(L, 1, "Invalid semantic");
 	}
 
-	/* Fill the arguments table */
-	const int top = lua_gettop(L);
+	return lua_gettop(L);
+}
+
+static void
+hex_wait_pid(lua_State *L, const char *enchantment, pid_t pid) {
+	int status;
+
+	/* Wait for process termination, and fail if failure */
+	assert(waitpid(pid, &status, 0) == pid);
+
+	if (WIFSIGNALED(status)) {
+		const int signo = WTERMSIG(status);
+		luaL_error(L, "%s: Terminated with signal %d (%s)", enchantment, signo, strsignal(signo));
+	}
+
+	if (WIFEXITED(status)) {
+		const int exitstatus = WEXITSTATUS(status);
+		if (exitstatus != 0) {
+			luaL_error(L, "%s: Exited with code %d", enchantment, exitstatus);
+		}
+	}
+}
+
+static int
+lua_hex_cast(lua_State *L) {
+	const int top = hex_enchantment_semantic(L, "hex.cast");
 	const char *argv[top + 1];
+
+	/* Fill the arguments table */
 	for (int i = 0; i < top; i++) {
 		argv[i] = luaL_checkstring(L, i + 1);
 	}
@@ -119,7 +121,7 @@ lua_hex_cast(lua_State *L) {
 	case 0:
 		/* We cast const char *argv[] to char *argv[] because we're in the child anyway,
 		and I can't really believe execve does modify the argument array */
-		execvp(argv[0], (void *)argv);
+		execvp(*argv, (void *)argv);
 		fprintf(stderr, "execve %s: %s\n", *argv, strerror(errno));
 		exit(-1);
 	case -1:
@@ -128,7 +130,74 @@ lua_hex_cast(lua_State *L) {
 		break;
 	}
 
-	return hex_wait_pid(L, pid);
+	hex_wait_pid(L, "hex.cast", pid);
+
+	return 0;
+}
+
+static int
+lua_hex_charm(lua_State *L) {
+	const int top = hex_enchantment_semantic(L, "hex.charm");
+	const char *argv[top + 1];
+
+	/* Fill the arguments table */
+	for (int i = 0; i < top; i++) {
+		argv[i] = luaL_checkstring(L, i + 1);
+	}
+	argv[top] = NULL;
+
+	/* Until here, it was the exact same call as lua_hex_cast, but we will redirect
+	the new process STOUT_FILENO in a pipe and retrieve its value in a lua buffer */
+	int filedes[2];
+
+	if (pipe(filedes) != 0) {
+		return luaL_error(L, "hex.charm: fork: %s", strerror(errno));
+	}
+
+	const pid_t pid = fork();
+	switch (pid) {
+	case 0:
+		if (dup2(filedes[1], STDOUT_FILENO) != STDOUT_FILENO) {
+			fprintf(stderr, "dup2 %s: %s\n", *argv, strerror(errno));
+			exit(-1);
+		}
+		close(filedes[0]);
+		close(filedes[1]);
+		/* We cast const char *argv[] to char *argv[] because we're in the child anyway,
+		and I can't really believe execve does modify the argument array */
+		execvp(*argv, (void *)argv);
+		fprintf(stderr, "execve %s: %s\n", *argv, strerror(errno));
+		exit(-1);
+	case -1:
+		return luaL_error(L, "hex.charm: fork: %s", strerror(errno));
+	default:
+		break;
+	}
+
+	luaL_Buffer b;
+
+	luaL_buffinit(L, &b);
+	close(filedes[1]);
+
+	char *buffer;
+	ssize_t readval;
+	while (buffer = luaL_prepbuffer(&b), readval = read(filedes[0], buffer, LUAL_BUFFERSIZE), readval > 0) {
+		luaL_addsize(&b, readval);
+	}
+
+	const int errcode = errno;
+
+	close(filedes[0]);
+
+	if (readval < 0) {
+		return luaL_error(L, "hex.charm: read: %s", strerror(errcode));
+	}
+
+	luaL_pushresult(&b);
+
+	hex_wait_pid(L, "hex.charm", pid);
+
+	return 1;
 }
 
 static int
@@ -163,7 +232,9 @@ lua_hex_invoke(lua_State *L) {
 		break;
 	}
 
-	return hex_wait_pid(L, pid);
+	hex_wait_pid(L, "hex.invoke", pid);
+
+	return 0;
 }
 
 static int
@@ -321,6 +392,7 @@ lua_hex_hinderuser(lua_State *L) {
 static const luaL_Reg hex_funcs[] = {
 	{ "exit",        lua_hex_exit },
 	{ "cast",        lua_hex_cast },
+	{ "charm",       lua_hex_charm },
 	{ "invoke",      lua_hex_invoke },
 	{ "incantation", lua_hex_incantation },
 	{ "hinderuser",  lua_hex_hinderuser },
