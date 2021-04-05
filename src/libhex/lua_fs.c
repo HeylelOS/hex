@@ -237,7 +237,6 @@ fs_mount_flags(lua_State *L) {
 		{ "remount",     MS_REMOUNT },
 		{ "mandlock",    MS_MANDLOCK },
 		{ "dirsync",     MS_DIRSYNC },
-		{ "nosymfollow", MS_NOSYMFOLLOW },
 		{ "noatime",     MS_NOATIME },
 		{ "nodiratime",  MS_NODIRATIME },
 		{ "bind",        MS_BIND },
