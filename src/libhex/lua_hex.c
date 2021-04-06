@@ -12,8 +12,6 @@
 #include <sched.h>
 #include <errno.h>
 
-#include <assert.h>
-
 static int
 lua_hex_exit(lua_State *L) {
 	static const char *statuses[] = {
@@ -90,7 +88,7 @@ hex_wait_pid(lua_State *L, const char *enchantment, pid_t pid) {
 	int status;
 
 	/* Wait for process termination, and fail if failure */
-	assert(waitpid(pid, &status, 0) == pid);
+	waitpid(pid, &status, 0);
 
 	if (WIFSIGNALED(status)) {
 		const int signo = WTERMSIG(status);
@@ -314,7 +312,8 @@ hex_id_map(const char *path, id_t newid, id_t oldid) {
 		const int length = snprintf(NULL, 0, format, newid, oldid) + 1;
 		char buffer[length];
 
-		assert(snprintf(buffer, length, format, newid, oldid) < length);
+		snprintf(buffer, length, format, newid, oldid);
+
 		if (write(fd, buffer, length) != length) {
 			retval = -1;
 		}

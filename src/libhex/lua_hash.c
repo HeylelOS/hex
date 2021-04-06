@@ -3,8 +3,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <assert.h>
-
 #define HEX_HASH_METATABLE_NAME "Hex.hash"
 
 /* Hash is implemented with an FNV-1a hash */
