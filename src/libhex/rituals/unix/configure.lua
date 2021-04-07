@@ -10,7 +10,7 @@ hex.rituals['unix-configure'] = function(name, material)
 		local options = setup.options
 
 		if options then
-			hex.cast(script, table.unpack(options))
+			hex.cast(script, options)
 		end
 	else
 		hex.cast(script)

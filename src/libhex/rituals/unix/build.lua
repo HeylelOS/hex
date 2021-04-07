@@ -11,9 +11,9 @@ hex.rituals['unix-build'] = function(name, material)
 			local targets = setup.targets
 
 			if targets then
-				hex.cast('make', table.unpack(options), '--', table.unpack(targets))
+				hex.cast('make', options, '--', targets)
 			else
-				hex.cast('make', table.unpack(options), '--')
+				hex.cast('make', options, '--')
 			end
 		end
 	else

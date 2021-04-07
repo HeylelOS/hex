@@ -8,7 +8,7 @@ hex.rituals['unix-install'] = function(name, material)
 		local options = setup.options
 
 		if options then
-			hex.cast('make', table.unpack(options), '--', 'install')
+			hex.cast('make', options, '--', 'install')
 		end
 	else
 		hex.cast('make', 'install')

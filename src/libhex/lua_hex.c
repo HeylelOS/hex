@@ -40,47 +40,36 @@ lua_hex_exit(lua_State *L) {
 	exit(status);
 }
 
-static bool
-hex_unpack_arguments(lua_State *L) {
-	const bool valid = lua_gettop(L) == 1;
-
-	if (valid) {
-		int i = 1;
-
-		while (lua_rawgeti(L, 1, i) != LUA_TNIL) {
-			i++;
-		}
-
-		lua_rotate(L, 1, -1);
-		lua_settop(L, i - 1);
-	}
-
-	return valid;
-}
-
 static int
-hex_enchantment_semantic(lua_State *L, const char *enchantment) {
+hex_unpack_arguments(lua_State *L) {
+	int arg = 1, top = lua_gettop(L);
 
-	/* The first argument determines the semantic of the enchantment */
-	switch (lua_type(L, 1)) {
-	case LUA_TSTRING:
-		/* Arguments only semantic, everything is already on the stack */
-		break;
-	case LUA_TTABLE:
-		/* Array semantic, must unpack content on stack */
-		if (!hex_unpack_arguments(L)) {
-			return luaL_error(L, "%s: Array semantic expects one argument", enchantment);
+	while (arg <= top) {
+		/* For, each argument, we check if it is a table */
+		if (lua_type(L, arg) == LUA_TTABLE) {
+			int i = 1;
+
+			/* We unpack its content at the top of the stack */
+			while (lua_rawgeti(L, arg, i) != LUA_TNIL) {
+				i++;
+			}
+
+			/* Rotate unpacked at arg position */
+			lua_rotate(L, arg, i);
+			/* Recalibrate arg, points to nil */
+			arg += i - 1;
+			/* Set nil and unpacked arg top, arg now points to next processed */
+			lua_rotate(L, arg, -2);
+			/* Recalibrate top */
+			top += i - 2;
+			/* Pop nil and unpacked arg */
+			lua_settop(L, top);
+		} else {
+			arg++;
 		}
-		break;
-	case LUA_TFUNCTION:
-		/* Function evaluation semantic, just execute it */
-		lua_call(L, lua_gettop(L) - 1, LUA_MULTRET);
-		break;
-	default:
-		return luaL_argerror(L, 1, "Invalid semantic");
 	}
 
-	return lua_gettop(L);
+	return top;
 }
 
 static void
@@ -105,7 +94,7 @@ hex_wait_pid(lua_State *L, const char *enchantment, pid_t pid) {
 
 static int
 lua_hex_cast(lua_State *L) {
-	const int top = hex_enchantment_semantic(L, "hex.cast");
+	const int top = hex_unpack_arguments(L);
 	const char *argv[top + 1];
 
 	/* Fill the arguments table */
@@ -135,7 +124,7 @@ lua_hex_cast(lua_State *L) {
 
 static int
 lua_hex_charm(lua_State *L) {
-	const int top = hex_enchantment_semantic(L, "hex.charm");
+	const int top = hex_unpack_arguments(L);
 	const char *argv[top + 1];
 
 	/* Fill the arguments table */
@@ -200,21 +189,11 @@ lua_hex_charm(lua_State *L) {
 
 static int
 lua_hex_invoke(lua_State *L) {
-
-	/* The first argument determines the semantic of the invocation */
-	if (lua_type(L, 1) == LUA_TTABLE) {
-		/* Array semantic, must unpack content on stack */
-		if (!hex_unpack_arguments(L)) {
-			lua_pushliteral(L, "hex.invoke: Array semantic expects one argument");
-			return lua_error(L);
-		}
-	}
-
+	const int top = hex_unpack_arguments(L);
 	const pid_t pid = fork();
-	switch (pid) {
-	case 0: {
-		const int top = lua_gettop(L);
 
+	switch (pid) {
+	case 0:
 		for (int i = 1; i <= top; i++) {
 			/* We guarantee the first argument to be the first one
 			executed, so each new argument is rotated on the top to be directly
@@ -222,8 +201,7 @@ lua_hex_invoke(lua_State *L) {
 			lua_rotate(L, 1, -1);
 			lua_call(L, 0, 0);
 		}
-
-	}	exit(EXIT_SUCCESS);
+		exit(EXIT_SUCCESS);
 	case -1:
 		return luaL_error(L, "hex.invoke: fork: %s", strerror(errno));
 	default:
@@ -237,18 +215,8 @@ lua_hex_invoke(lua_State *L) {
 
 static int
 lua_hex_incantation(lua_State *L) {
-
-	/* The first argument determines the semantic of the invocation */
-	if (lua_type(L, 1) == LUA_TTABLE) {
-		/* Array semantic, must unpack content on stack */
-		if (!hex_unpack_arguments(L)) {
-			lua_pushliteral(L, "hex.incantation: Array semantic expects one argument");
-			return lua_error(L);
-		}
-	}
-
 	/* Keep number of rituals composing incantation */
-	const int top = lua_gettop(L);
+	const int top = hex_unpack_arguments(L);
 
 	/* Get the rituals table */
 	lua_getglobal(L, "hex");
