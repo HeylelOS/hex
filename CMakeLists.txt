@@ -54,6 +54,28 @@ set_target_properties(libhex PROPERTIES
 	PUBLIC_HEADER include/hex/lua.h
 )
 
+#################
+# Documentation #
+#################
+
+find_package(Doxygen)
+
+# We need doxygen with markdown support
+if(DOXYGEN_FOUND AND DOXYGEN_VERSION VERSION_GREATER_EQUAL 1.8.0)
+	set(DOXYGEN_EXTRACT_ALL YES)
+	set(DOXYGEN_OPTIMIZE_OUTPUT_FOR_C YES)
+
+	doxygen_add_docs(doc
+		include/hex/lua.h
+		docs/library/hex.md
+		docs/library/hash.md
+		docs/library/log.md
+		docs/library/env.md
+		docs/library/fs.md
+		docs/hex.1.md
+	)
+endif()
+
 ###########
 # Install #
 ###########

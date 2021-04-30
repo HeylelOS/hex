@@ -37,7 +37,7 @@ hex.melt = function(crucible, source)
 end
 
 -- The following function returns the list of a crucible's
--- melted sources in an order satisfying each of them dependencies.
+-- melted sources in an order satisfying each of their dependencies.
 -- The implementation is crude, and the complexity may not be suited for all use cases.
 local function resolvedependencies(melted)
 	-- Pre-treatment of melted structure

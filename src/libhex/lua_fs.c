@@ -193,9 +193,8 @@ lua_fs_readdir(lua_State *L) {
 	lua_newtable(L);
 	while (errno = 0, entry = readdir(dirp), entry != NULL) {
 		if (*entry->d_name != '.') {
-			lua_pushinteger(L, index);
 			lua_pushstring(L, entry->d_name);
-			lua_rawset(L, -3);
+			lua_rawseti(L, -2, index);
 			index++;
 		}
 	}
@@ -321,11 +320,12 @@ lua_fs_mount(lua_State *L) {
 	const unsigned long mountflags = fs_mount_flags(L);
 
 #ifdef __GLIBC__
-	if (mount(source, target, filesystemtype, mountflags, NULL) != 0) {
+	const char * const opts = lua_tostring(L, 5);
+	if (mount(source, target, filesystemtype, mountflags, (void *)opts) != 0) {
 		return luaL_error(L, "fs.mount: mount %s %s %s: %s", source, target, filesystemtype, strerror(errno));
 	}
 #elif defined(__APPLE__)
-	if (mount(filesystemtype, target, mountflags, NULL) != 0) {
+	if (mount(filesystemtype, target, mountflags, (void *)source) != 0) {
 		return luaL_error(L, "fs.mount: mount %s %s %s: %s", source, target, filesystemtype, strerror(errno));
 	}
 #else
