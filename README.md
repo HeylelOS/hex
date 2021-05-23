@@ -28,7 +28,6 @@ and companies often end up using overkill solutions like VMs or dockers.
 Lua is a fast, portable, embeddable scripting language. It is extremely extensible by design.
 Using Lua to describe a build sequence is basically using configuration files on steroids.
 It is also well documented and its C interface makes it a good choice for cross-language support and system interaction.
-Scripting languages are always a good idea if the repositories are managed with a SCM.
 
 ## Features
 
@@ -41,8 +40,9 @@ Hex supports the following isolation capabilites:
 
 Hex intends to support the following systems, for the specified rituals:
 - [x] CMake (configure, build, install)
-- [x] UNIX configure/make (configure, build, install) (according to the GNU autotooled configure/make behaviours)
+- [x] UNIX configure/make (configure, build, install) (build/installed behaviours mimic'd on GNU ones)
 - [ ] Kbuild (configure, build, install)
+- [x] GNU autotools (configure)
 - [ ] QMake (configure)
 - [ ] Ninja (build)
 
@@ -61,5 +61,8 @@ cmake --install .
 
 ## Documentation
 
-Coming soon, I promise.
+Documentation is built mainly from markdown pages. If doxygen is available,
+you can build it using the `doc` rule with cmake.
+
+Documentation concerning rituals `setup`s is not yet available.
 

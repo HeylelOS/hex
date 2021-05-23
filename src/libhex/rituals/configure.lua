@@ -7,6 +7,8 @@ hex.rituals['configure'] = function(name, material)
 
 		if fs.isreg(fs.path(source, 'CMakeLists.txt')) then
 			ritual = hex.rituals['cmake-configure']
+		elseif fs.isreg(fs.path(source, 'configure.ac')) then
+			ritual = hex.rituals['gnu-configure']
 		elseif fs.isexe(fs.path(source, 'configure')) then
 			ritual = hex.rituals['unix-configure']
 		end
