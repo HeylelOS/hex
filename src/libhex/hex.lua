@@ -126,18 +126,40 @@ hex.perform = function(crucible, ...)
 	-- Acquire incantation from arguments
 	local incantation = hex.incantation(...)
 	local incantationcount = #incantation
+	local output = crucible.shackle.output
+
+	if output then
+		fs.mkdirs(output)
+	end
 
 	for i = 1, listcount do
 		local name = list[i]
+		local materialout
+
+		if output then
+			materialout = fs.path(output, name)
+			fs.mkdirs(materialout)
+			for _, entry in ipairs(fs.readdir(materialout)) do
+				fs.unlink(fs.path(materialout, entry))
+			end
+		end
+
+		log.info('Starting rituals for ', name)
 
 		for j = 1, incantationcount do
-			hex.invoke(function()
+			local invocation = function()
 				local material = crucible.melted[name]
 				hex.hinder(crucible.shackle)
 				env.fill(pairs(crucible.env))
 				env.fill(pairs(material.env))
 				incantation[j](name, material)
-			end)
+			end
+
+			if materialout then
+				hex.invoke(invocation, fs.path(materialout, j))
+			else
+				hex.invoke(invocation)
+			end
 		end
 	end
 end

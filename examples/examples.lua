@@ -6,6 +6,7 @@ local crucible = hex.crucible('build')
 -- we could isolate the build using the 'filesystem' member
 crucible.shackle = {
 	user = { uid = 0; gid = 0 }; -- Make the program believe root root is doing this
+	output = fs.path(crucible.molten, 'logs'); -- Specify output directory for material's rituals output
 }
 
 -- Create a directory where we'll stage everything (eg. to make packages afterwards)

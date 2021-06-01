@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <alloca.h>
 #include <fcntl.h>
 #include <sched.h>
 #include <errno.h>
@@ -189,11 +190,47 @@ lua_hex_charm(lua_State *L) {
 
 static int
 lua_hex_invoke(lua_State *L) {
+	size_t outputlen;
+	const char *output = lua_tolstring(L, -1, &outputlen);
+	char *filename;
+
+	/* We have no lua GC's guarantee that after lua_pop, output
+	 * will still be valid. So we create a local copy */
+	if (output != NULL) {
+		filename = alloca(outputlen + 1);
+		strncpy(filename, output, outputlen + 1);
+		lua_pop(L, 1);
+	} else {
+		filename = NULL;
+	}
+
 	const int top = hex_unpack_arguments(L);
 	const pid_t pid = fork();
 
 	switch (pid) {
 	case 0:
+		if (filename != NULL) {
+			/* Output redirection into a file */
+			int fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, 0666);
+
+			if (fd < 0) {
+				fprintf(stderr, "open %s: %s\n", filename, strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+
+			if (dup2(fd, STDOUT_FILENO) != STDOUT_FILENO) {
+				fprintf(stderr, "dup2 (stdout) %s: %s\n", filename, strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+
+			if (dup2(fd, STDERR_FILENO) != STDERR_FILENO) {
+				fprintf(stderr, "dup2 (stderr) %s: %s\n", filename, strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+
+			close(fd);
+		}
+
 		for (int i = 1; i <= top; i++) {
 			/* We guarantee the first argument to be the first one
 			executed, so each new argument is rotated on the top to be directly

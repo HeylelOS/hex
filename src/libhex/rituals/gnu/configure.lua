@@ -2,7 +2,7 @@
 hex.rituals['gnu-configure'] = function(name, material)
 	local setup = material.setup.configure
 	local source = material.source
-	local scriptoptions = nil
+	local scriptoptions
 
 	if setup then
 		local autooptions = setup.autooptions

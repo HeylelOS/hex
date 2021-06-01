@@ -52,9 +52,10 @@ For each ritual in **rituals**, if ritual is a string, resolves it through `hex.
 else if ritual is a function, forward the function. Returns an array of all resolved **rituals**.
 Raises an error if any of the ritual is not a function.
 
-### hex.invoke ([functions...])
+### hex.invoke ([functions...][, filename])
 
 Creates a new process and runs every **functions**. Waits for process termination.
+If **filename** is specified, the process's output is redirected into it, creating it and truncating it if required.
 Returns if successful, raises an error if the process didn't return successfully.
 
 ### hex.melt (crucible, source)
