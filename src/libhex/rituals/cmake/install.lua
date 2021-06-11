@@ -6,10 +6,10 @@ hex.rituals['cmake-install'] = function(name, material)
 		local options = setup.options
 
 		if options then
-			hex.cast('cmake', '--install', material.build, options)
+			return hex.cast('cmake', '--install', material.build, options)
 		end
-	else
-		hex.cast('cmake', '--install', material.build)
 	end
+
+	return hex.cast('cmake', '--install', material.build)
 end
 

@@ -6,10 +6,10 @@ hex.rituals['cmake-configure'] = function(name, material)
 		local options = setup.options
 
 		if options then
-			hex.cast('cmake', options, '-S', material.source, '-B', material.build)
+			return hex.cast('cmake', options, '-S', material.source, '-B', material.build)
 		end
-	else
-		hex.cast('cmake', '-S', material.source, '-B', material.build)
 	end
+
+	return hex.cast('cmake', '-S', material.source, '-B', material.build)
 end
 

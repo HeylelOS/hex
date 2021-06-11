@@ -41,7 +41,7 @@ Hex supports the following isolation capabilites:
 Hex intends to support the following systems, for the specified rituals:
 - [x] CMake (configure, build, install)
 - [x] UNIX configure/make (configure, build, install) (build/installed behaviours mimic'd on GNU ones)
-- [ ] Kbuild (configure, build, install)
+- [x] Kbuild (configure, build, install)
 - [x] GNU autotools (configure)
 - [ ] QMake (configure)
 - [ ] Ninja (build)
@@ -64,5 +64,5 @@ cmake --install .
 Documentation is built mainly from markdown pages. If doxygen is available,
 you can build it using the `doc` rule with cmake.
 
-Documentation concerning rituals `setup`s is not yet available.
+Documentation concerning rituals is not yet available, as behaviour is not stable yet.
 

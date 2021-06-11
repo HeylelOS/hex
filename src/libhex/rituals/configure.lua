@@ -1,6 +1,6 @@
 
 hex.rituals['configure'] = function(name, material)
-	local ritual = material.override['configure']
+	local ritual = material.override.configure
 
 	if not ritual then
 		local source = material.source
@@ -11,6 +11,8 @@ hex.rituals['configure'] = function(name, material)
 			ritual = hex.rituals['gnu-configure']
 		elseif fs.isexe(fs.path(source, 'configure')) then
 			ritual = hex.rituals['unix-configure']
+		elseif fs.isreg(fs.path(source, 'Kconfig')) then
+			ritual = hex.rituals['kbuild-configure']
 		end
 	end
 

@@ -19,7 +19,7 @@ hex.melt = function(crucible, source)
 		error('hex.melt: Invalid source (hidden file or root): '..source)
 	end
 
-	local build = fs.path(crucible.molten, 'tailings', name)
+	local build = fs.path(crucible.molten, 'artifacts', name)
 	fs.mkdirs(build)
 
 	local material = {

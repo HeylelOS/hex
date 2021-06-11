@@ -1,8 +1,8 @@
 
-hex.rituals['unix-build'] = function(name, material)
+hex.rituals['kbuild-build'] = function(name, material)
 	local setup = material.setup.build
 
-	fs.chdir(material.build)
+	fs.chdir(material.source)
 
 	if setup then
 		local options = setup.options

@@ -1,6 +1,6 @@
 
 hex.rituals['build'] = function(name, material)
-	local ritual = material.override['build']
+	local ritual = material.override.build
 
 	if not ritual then
 		local build = material.build
@@ -9,6 +9,12 @@ hex.rituals['build'] = function(name, material)
 			ritual = hex.rituals['cmake-build']
 		elseif fs.isreg(fs.path(build, 'Makefile')) then
 			ritual = hex.rituals['unix-build']
+		else
+			local source = material.source
+
+			if fs.isreg(fs.path(source, 'Kbuild')) then
+				ritual = hex.rituals['kbuild-build']
+			end
 		end
 	end
 
