@@ -124,29 +124,34 @@ hex.perform = function(crucible, ...)
 	-- Resolve the dependency list
 	local list, listcount = resolvedependencies(crucible.melted)
 	-- Acquire incantation from arguments
-	local incantation = hex.incantation(...)
+	local incantation, ritualnames = hex.incantation(...)
 	local incantationcount = #incantation
-	local output = crucible.shackle.output
-
-	if output then
-		fs.mkdirs(output)
-	end
+	-- Get redirected output
+	local outputs = crucible.shackle.outputs
 
 	for i = 1, listcount do
 		local name = list[i]
-		local materialout
+		local output
 
-		if output then
-			materialout = fs.path(output, name)
-			fs.mkdirs(materialout)
-			for _, entry in ipairs(fs.readdir(materialout)) do
-				fs.unlink(fs.path(materialout, entry))
+		if outputs then
+			output = fs.path(outputs, name)
+			fs.mkdirs(output)
+			for _, entry in pairs(fs.readdir(output)) do
+				fs.unlink(fs.path(output, entry))
 			end
 		end
 
-		log.info('Starting rituals for ', name)
+		log.notice('Starting rituals for ', name)
 
 		for j = 1, incantationcount do
+			local ritualname = ritualnames[j]
+
+			if not ritualname then
+				ritualname = j
+			end
+
+			log.info('Starting ritual ', ritualname, ' for ', name)
+
 			local invocation = function()
 				local material = crucible.melted[name]
 				hex.hinder(crucible.shackle)
@@ -155,8 +160,8 @@ hex.perform = function(crucible, ...)
 				incantation[j](name, material)
 			end
 
-			if materialout then
-				hex.invoke(invocation, fs.path(materialout, j))
+			if output then
+				hex.invoke(invocation, fs.path(output, ritualname))
 			else
 				hex.invoke(invocation)
 			end

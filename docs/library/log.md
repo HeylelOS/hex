@@ -2,6 +2,10 @@
 
 Logging facility, preferred over `print` to display on the console.
 
+### log.level
+
+Explicits the minimum **level** for which `log.print` doesn't discard messages.
+
 ### log.print (level[, message...])
 
 Records a new log entry with level **level**, concatenating **message** in one entry.
@@ -11,6 +15,9 @@ Level can be one of the following:
 - notice
 - warning
 - error
+If `log.level` is specified and is a valid level, it specified the minimum level
+for which the printed messages won't be discarded. By default, and if `log.level`
+is not specified, expands to `warning`.
 
 ### log.debug (message...)
 

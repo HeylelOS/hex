@@ -50,18 +50,27 @@ lua_log_print(lua_State *L) {
 	const enum log_level level = luaL_checkoption(L, 1, NULL, log_levels);
 	const int top = lua_gettop(L);
 
-	if (top == 1) {
-		return luaL_argerror(L, 2, "log.print: Expected at least one string to log, found none");
-	}
+	lua_getglobal(L, "log");
+	lua_getfield(L, -1, "level");
 
-	lua_concat(L, top - 1);
+	const enum log_level minlevel = luaL_checkoption(L, -1, "warning", log_levels);
 
-	const char *string = luaL_checkstring(L, -1);
+	if (level >= minlevel) {
+		lua_settop(L, top);
 
-	if (isatty(STDERR_FILENO) == 1) {
-		fprintf(stderr, "[%s%s"ANSI_SGR_RESET"]: %s\n", log_fancy[level], log_levels[level], string);
-	} else {
-		fprintf(stderr, "[%s]: %s\n", log_levels[level], string);
+		if (top == 1) {
+			return luaL_argerror(L, 2, "log.print: Expected at least one string to log, found none");
+		}
+
+		lua_concat(L, top - 1);
+
+		const char *string = luaL_checkstring(L, -1);
+
+		if (isatty(STDERR_FILENO) == 1) {
+			fprintf(stderr, "[%s%s"ANSI_SGR_RESET"]: %s\n", log_fancy[level], log_levels[level], string);
+		} else {
+			fprintf(stderr, "[%s]: %s\n", log_levels[level], string);
+		}
 	}
 
 	return 0;

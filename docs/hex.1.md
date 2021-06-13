@@ -4,7 +4,7 @@
 hex - Hex meta build system Lua interpreter.
 
 ## SYNOPSIS
-- **hex** [-h] [-C \<dir\>] rituals...
+- **hex** [-hv] [-C \<dir\>] rituals...
 
 ## DESCRIPTION
 Lua interpreter for the Hex meta build system framework.
@@ -19,6 +19,7 @@ The following components from the Lua standard libraries still are available:
 
 ## OPTIONS
 - -h : Prints usage and exits.
+- -v : Increases verbosity level by one.
 - -C \<dir\> : Current working directory, changed before doing anything else.
 
 ## AUTHOR

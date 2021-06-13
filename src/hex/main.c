@@ -8,38 +8,18 @@
 #include "hex/lua.h"
 
 static const char version[] =
-"Hex - Copyright (C) 2021, Valentin Debon\n"
-LUA_COPYRIGHT"\n"
-"                   6666666                   \n"
-"             666666       666666             \n"
-"         6666                   666          \n"
-"       666  6                    6 666       \n"
-"     666     66               666    66      \n"
-"    66       66666         66666      666    \n"
-"   66         6   66     66   66       666   \n"
-"  66          66    66666    66         666  \n"
-" 666           66  66   66  66           66  \n"
-" 66            6666       6666           666 \n"
-" 66           6666         6666          666 \n"
-" 66        666  66         66  666       666 \n"
-" 66     666      66       66      666    666 \n"
-" 666  666666666666666666666666666666666  66  \n"
-"  66               66   66              666  \n"
-"   66              66   66             666   \n"
-"    66              66 66             666    \n"
-"      6666           666           666       \n"
-"         6666         6         666          \n"
-"            6666666   6   666666             \n"
-"                   6666666                   \n"
+	"Hex - Copyright (C) 2021, Valentin Debon\n"
+	LUA_COPYRIGHT"\n"
 ;
 
 struct hex_args {
 	const char *progname;
+	int verbose;
 };
 
 static void
 hex_usage(const struct hex_args *args, int status) {
-	fprintf(stderr, "usage: %s [-C <dir>] rituals...\n", args->progname);
+	fprintf(stderr, "usage: %s [-hv] [-C <dir>] rituals...\n", args->progname);
 	exit(status);
 }
 
@@ -48,6 +28,7 @@ hex_parse_args(int argc, char **argv) {
 	const char *workdir = NULL;
 	struct hex_args args = {
 		.progname = strrchr(*argv, '/'),
+		.verbose = 0,
 	};
 	int c;
 
@@ -57,11 +38,14 @@ hex_parse_args(int argc, char **argv) {
 		args.progname++;
 	}
 
-	while (c = getopt(argc, argv, ":hC:"), c != -1) {
+	while (c = getopt(argc, argv, ":hvC:"), c != -1) {
 		switch (c) {
 		case 'h':
 			fputs(version, stdout);
 			hex_usage(&args, EXIT_SUCCESS);
+		case 'v':
+			args.verbose++;
+			break;
 		case 'C':
 			workdir = optarg;
 			break;
@@ -121,6 +105,13 @@ hex_lua_runtime_init(lua_State *L, const struct hex_args *args) {
 	luaL_checkversion(L);
 	lua_openlibs(L);
 	lua_atpanic(L, hex_lua_panic);
+
+	if (args->verbose != 0) {
+		lua_getglobal(L, "hex");
+		lua_pushinteger(L, args->verbose);
+		lua_setfield(L, -2, "verbose");
+		lua_pop(L, 1);
+	}
 
 	switch (luaL_loadbufferx(L, hex_runtime, hex_runtime_size, args->progname, "b")) {
 	case LUA_OK:

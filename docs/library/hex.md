@@ -2,15 +2,21 @@
 
 Hex meta build system framework core.
 
+### hex.verbose
+
+Used to determine if `hex.cast` and `hex.charm` print executed commands.
+
 ### hex.cast (program[, arguments...])
 
 Executes **program** with the following **arguments**.
+If `hex.verbose` is `true`, prints arguments on standard error.
 Waits the process for termination, raises an error if it failed
 and returns nothing if it succeeded.
 
 ### hex.charm (program[, arguments...])
 
 Executes **program** with the following **arguments**.
+If `hex.verbose` is `true`, prints arguments on standard error.
 Waits the process for termination, raises an error if it failed
 and returns its _standard output_ if it succeeded.
 
@@ -55,7 +61,7 @@ Raises an error if any of the ritual is not a function.
 ### hex.invoke ([functions...][, filename])
 
 Creates a new process and runs every **functions**. Waits for process termination.
-If **filename** is specified, the process's output is redirected into it, creating it and truncating it if required.
+If **filename** is specified, the process's standard output is redirected into it, creating it and truncating it if required.
 Returns if successful, raises an error if the process didn't return successfully.
 
 ### hex.melt (crucible, source)
@@ -76,6 +82,8 @@ The created material is created with the following attributes:
 
 Invoke every ritual in **rituals** for each `melted` material according to an order
 satisfying their dependencies. **rituals** is resolved as in `hex.incantation`.
+Before any ritual is started for a material, a log of level `notice` is emitted for itself.
+And before a ritual is started for a material, a log of level `info` is emitted for the said material/ritual.
 For every material, every ritual is invoked in order, hindered by the **crucible**'s `shackle`.
 The environment is overriden according to the **crucible**'s and material's `env` attributes.
 The incantation is finally executed with the appropriate name and material.

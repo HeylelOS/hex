@@ -46,7 +46,7 @@ hex_unpack_arguments(lua_State *L) {
 	int arg = 1, top = lua_gettop(L);
 
 	while (arg <= top) {
-		/* For, each argument, we check if it is a table */
+		/* For each argument, we check if it is a table */
 		if (lua_type(L, arg) == LUA_TTABLE) {
 			int i = 1;
 
@@ -93,23 +93,50 @@ hex_wait_pid(lua_State *L, const char *enchantment, pid_t pid) {
 	}
 }
 
+static void
+hex_print_argv(lua_State *L, int top, char **argv) {
+	int verbose;
+
+	/* Get verbosity */
+	lua_getglobal(L, "hex");
+	lua_getfield(L, -1, "verbose");
+	verbose = lua_toboolean(L, -1);
+	lua_settop(L, top);
+
+	/* Print command if verbose */
+	if (verbose != 0) {
+		const int last = top - 1;
+		int i = 0;
+
+		while (i < last) {
+			fputs(argv[i], stderr);
+			fputc(' ', stderr);
+			i++;
+		}
+		fputs(argv[i], stderr);
+		fputc('\n', stderr);
+	}
+}
+
 static int
 lua_hex_cast(lua_State *L) {
 	const int top = hex_unpack_arguments(L);
-	const char *argv[top + 1];
+	char *argv[top + 1];
 
-	/* Fill the arguments table */
+	/* Fill argv */
 	for (int i = 0; i < top; i++) {
-		argv[i] = luaL_checkstring(L, i + 1);
+		size_t length;
+		const char *arg = luaL_checklstring(L, i + 1, &length);
+		argv[i] = strncpy(alloca(length + 1), arg, length + 1);
 	}
 	argv[top] = NULL;
+
+	hex_print_argv(L, top, argv);
 
 	const pid_t pid = fork();
 	switch (pid) {
 	case 0:
-		/* We cast const char *argv[] to char *argv[] because we're in the child anyway,
-		and I can't really believe execve does modify the argument array */
-		execvp(*argv, (void *)argv);
+		execvp(*argv, argv);
 		fprintf(stderr, "execve %s: %s\n", *argv, strerror(errno));
 		exit(-1);
 	case -1:
@@ -126,13 +153,17 @@ lua_hex_cast(lua_State *L) {
 static int
 lua_hex_charm(lua_State *L) {
 	const int top = hex_unpack_arguments(L);
-	const char *argv[top + 1];
+	char *argv[top + 1];
 
-	/* Fill the arguments table */
+	/* Fill argv */
 	for (int i = 0; i < top; i++) {
-		argv[i] = luaL_checkstring(L, i + 1);
+		size_t length;
+		const char *arg = luaL_checklstring(L, i + 1, &length);
+		argv[i] = strncpy(alloca(length + 1), arg, length + 1);
 	}
 	argv[top] = NULL;
+
+	hex_print_argv(L, top, argv);
 
 	/* Until here, it was the exact same call as lua_hex_cast, but we will redirect
 	the new process STOUT_FILENO in a pipe and retrieve its value in a lua buffer */
@@ -151,9 +182,7 @@ lua_hex_charm(lua_State *L) {
 		}
 		close(filedes[0]);
 		close(filedes[1]);
-		/* We cast const char *argv[] to char *argv[] because we're in the child anyway,
-		and I can't really believe execve does modify the argument array */
-		execvp(*argv, (void *)argv);
+		execvp(*argv, argv);
 		fprintf(stderr, "execve %s: %s\n", *argv, strerror(errno));
 		exit(-1);
 	case -1:
@@ -223,11 +252,6 @@ lua_hex_invoke(lua_State *L) {
 				exit(EXIT_FAILURE);
 			}
 
-			if (dup2(fd, STDERR_FILENO) != STDERR_FILENO) {
-				fprintf(stderr, "dup2 (stderr) %s: %s\n", filename, strerror(errno));
-				exit(EXIT_FAILURE);
-			}
-
 			close(fd);
 		}
 
@@ -264,24 +288,29 @@ lua_hex_incantation(lua_State *L) {
 
 	/* Create our incantation table */
 	lua_createtable(L, top, 0);
+	/* Create our names table */
+	lua_createtable(L, top, 0);
 
-	/* Rotate the rituals and incantation table at the bottom,
+	/* Rotate the rituals, incantation and names tables at the bottom,
 	then pop the global hex table. */
-	lua_rotate(L, 1, 2);
-	lua_settop(L, top + 2);
+	lua_rotate(L, 1, 3);
+	lua_settop(L, top + 3);
 
 	/* Resolve rituals and insert them into incantation table */
 	for (int i = top; i > 0; i--) {
 		switch (lua_type(L, -1)) {
 		case LUA_TSTRING:
-			/* Named ritual, must look up into the hex.rituals table
-			(stored at position 1 in the stack) */
+			/* Named ritual */
+			/* Add value in the names table, must duplicate it on the stack first */
+			lua_pushvalue(L, -1);
+			lua_rawseti(L, 3, i);
+			/* Must look up into the hex.rituals table (stored at position 1 in the stack) */
 			if (lua_gettable(L, 1) != LUA_TFUNCTION) {
 				return luaL_argerror(L, i, "hex.incantation: Invalid ritual table element");
 			}
 			break;
 		case LUA_TFUNCTION:
-			/* Direct ritual or anonymous one, directly set it */
+			/* Direct ritual or anonymous one, directly set it, no name available */
 			break;
 		default:
 			return luaL_argerror(L, i, "hex.incantation: Invalid ritual argument element");
@@ -290,8 +319,8 @@ lua_hex_incantation(lua_State *L) {
 		lua_rawseti(L, 2, i);
 	}
 
-	/* Only return the incantation table */
-	return 1;
+	/* Only return the incantation and names tables */
+	return 2;
 }
 
 static id_t

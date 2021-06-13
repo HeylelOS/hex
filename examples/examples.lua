@@ -1,4 +1,9 @@
 
+-- Set log.level to info, default value doesn't exist but
+-- expands to warning. With info, hex might emit some informations,
+-- like exposing when rituals for a material are beginning during hex.perform
+log.level = 'info'
+
 -- Create the crucible in the 'build' directory
 local crucible = hex.crucible('build')
 
@@ -6,7 +11,7 @@ local crucible = hex.crucible('build')
 -- we could isolate the build using the 'filesystem' member
 crucible.shackle = {
 	user = { uid = 0; gid = 0 }; -- Make the program believe root root is doing this
-	output = fs.path(crucible.molten, 'logs'); -- Specify output directory for material's rituals output
+	outputs = fs.path(crucible.molten, 'outputs'); -- Specify outputs directory for material's rituals stdout
 }
 
 -- Create a directory where we'll stage everything (eg. to make packages afterwards)
