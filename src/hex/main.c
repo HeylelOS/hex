@@ -14,12 +14,12 @@ static const char version[] =
 
 struct hex_args {
 	const char *progname;
-	int verbose;
+	bool silent;
 };
 
 static void
 hex_usage(const struct hex_args *args, int status) {
-	fprintf(stderr, "usage: %s [-hv] [-C <dir>] rituals...\n", args->progname);
+	fprintf(stderr, "usage: %s [-hs] [-C <dir>] rituals...\n", args->progname);
 	exit(status);
 }
 
@@ -28,7 +28,7 @@ hex_parse_args(int argc, char **argv) {
 	const char *workdir = NULL;
 	struct hex_args args = {
 		.progname = strrchr(*argv, '/'),
-		.verbose = 0,
+		.silent = false,
 	};
 	int c;
 
@@ -38,13 +38,13 @@ hex_parse_args(int argc, char **argv) {
 		args.progname++;
 	}
 
-	while (c = getopt(argc, argv, ":hvC:"), c != -1) {
+	while (c = getopt(argc, argv, ":hsC:"), c != -1) {
 		switch (c) {
 		case 'h':
 			fputs(version, stdout);
 			hex_usage(&args, EXIT_SUCCESS);
-		case 'v':
-			args.verbose++;
+		case 's':
+			args.silent = true;
 			break;
 		case 'C':
 			workdir = optarg;
@@ -106,10 +106,10 @@ hex_lua_runtime_init(lua_State *L, const struct hex_args *args) {
 	lua_openlibs(L);
 	lua_atpanic(L, hex_lua_panic);
 
-	if (args->verbose != 0) {
+	if (args->silent) {
 		lua_getglobal(L, "hex");
-		lua_pushinteger(L, args->verbose);
-		lua_setfield(L, -2, "verbose");
+		lua_pushboolean(L, args->silent);
+		lua_setfield(L, -2, "silent");
 		lua_pop(L, 1);
 	}
 

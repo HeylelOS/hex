@@ -94,27 +94,28 @@ hex_wait_pid(lua_State *L, const char *enchantment, pid_t pid) {
 }
 
 static void
-hex_print_argv(lua_State *L, int top, char **argv) {
-	int verbose;
+hex_print_command(lua_State *L, int top, char **argv) {
+	int silent;
 
 	/* Get verbosity */
 	lua_getglobal(L, "hex");
-	lua_getfield(L, -1, "verbose");
-	verbose = lua_toboolean(L, -1);
+	lua_getfield(L, -1, "silent");
+	silent = lua_toboolean(L, -1);
 	lua_settop(L, top);
 
-	/* Print command if verbose */
-	if (verbose != 0) {
+	/* Print command if not silent */
+	if (!silent) {
 		const int last = top - 1;
 		int i = 0;
 
 		while (i < last) {
-			fputs(argv[i], stderr);
-			fputc(' ', stderr);
+			fputs(argv[i], stdout);
+			fputc(' ', stdout);
 			i++;
 		}
-		fputs(argv[i], stderr);
-		fputc('\n', stderr);
+		fputs(argv[i], stdout);
+		fputc('\n', stdout);
+		fflush(stdout);
 	}
 }
 
@@ -131,7 +132,7 @@ lua_hex_cast(lua_State *L) {
 	}
 	argv[top] = NULL;
 
-	hex_print_argv(L, top, argv);
+	hex_print_command(L, top, argv);
 
 	const pid_t pid = fork();
 	switch (pid) {
@@ -163,7 +164,7 @@ lua_hex_charm(lua_State *L) {
 	}
 	argv[top] = NULL;
 
-	hex_print_argv(L, top, argv);
+	hex_print_command(L, top, argv);
 
 	/* Until here, it was the exact same call as lua_hex_cast, but we will redirect
 	the new process STOUT_FILENO in a pipe and retrieve its value in a lua buffer */
@@ -249,6 +250,11 @@ lua_hex_invoke(lua_State *L) {
 
 			if (dup2(fd, STDOUT_FILENO) != STDOUT_FILENO) {
 				fprintf(stderr, "dup2 (stdout) %s: %s\n", filename, strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+
+			if (dup2(fd, STDERR_FILENO) != STDERR_FILENO) {
+				fprintf(stderr, "dup2 (stderr) %s: %s\n", filename, strerror(errno));
 				exit(EXIT_FAILURE);
 			}
 

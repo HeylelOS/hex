@@ -2,21 +2,21 @@
 
 Hex meta build system framework core.
 
-### hex.verbose
+### hex.silent
 
 Used to determine if `hex.cast` and `hex.charm` print executed commands.
 
 ### hex.cast (program[, arguments...])
 
 Executes **program** with the following **arguments**.
-If `hex.verbose` is `true`, prints arguments on standard error.
+If `hex.silent` is `true`, does not print command on standard output.
 Waits the process for termination, raises an error if it failed
 and returns nothing if it succeeded.
 
 ### hex.charm (program[, arguments...])
 
 Executes **program** with the following **arguments**.
-If `hex.verbose` is `true`, prints arguments on standard error.
+If `hex.silent` is `true`, does not print command on standard output.
 Waits the process for termination, raises an error if it failed
 and returns its _standard output_ if it succeeded.
 
