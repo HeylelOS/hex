@@ -28,27 +28,23 @@ do -- CMake
 	}
 end
 
-do -- GNU configure, build & install rituals are shared with UNIX
+do -- GNU configure. build & install rituals are shared with UNIX
 	local material = hex.melt(crucible, 'gnu-hello')
 	material.setup = {
 		configure = {
+			script = fs.path('../../..', material.source, 'configure'), -- Putting relative paths everywhere to keep traces relative
 			autooptions = { '-i', }, -- Should install what's missing, will be done in source tree
 			scriptoptions = { '--prefix=/', }, -- Install in /, not /usr/local, the default
 		};
-		install = {
-			-- '../..' to keep a reproducible build and avoid absolute paths as the Makefile
-			-- is generated/executed in the material.build directory for the unix-build ritual.
-			options = { 'DESTDIR='..fs.path('../..', fs.basename(staging)), }
-		};
+		install = { options = { 'DESTDIR='..fs.path('../..', fs.basename(staging)), } };
 	}
 end
 
 do -- UNIX configure/makefile
 	local material = hex.melt(crucible, 'unix-hello')
-	material.setup.install = {
-		-- '../..' to keep a reproducible build and avoid absolute paths as the Makefile
-		-- is generated/executed in the material.build directory for the unix-build ritual.
-		options = { 'DESTDIR='..fs.path('../..', fs.basename(staging)), }
+	material.setup = {
+		configure = { script = fs.path('../../..', material.source, 'configure'), };
+		install = { options = { 'DESTDIR='..fs.path('../..', fs.basename(staging)), } };
 	}
 end
 

@@ -1,22 +1,26 @@
 
 hex.rituals['gnu-configure'] = function(name, material)
 	local setup = material.setup.configure
-	local source = material.source
-	local scriptoptions
+	local autooptions, script, scriptoptions
 
 	if setup then
-		local autooptions = setup.autooptions
-
-		if autooptions then
-			hex.cast('autoreconf', autooptions, '--', source)
-		end
-
+		autooptions = setup.autooptions
+		script = setup.script
 		scriptoptions = setup.scriptoptions
-	else
-		hex.cast('autoreconf', source)
 	end
 
-	local script = fs.path(fs.pwd(), source, 'configure')
+	local source = material.source
+
+	if autooptions then
+		hex.cast('autoreconf', autooptions, '--', source)
+	else
+		hex.cast('autoreconf', '--', source)
+	end
+
+	if not script then
+		script = fs.path(fs.pwd(), source, 'configure')
+	end
+
 	fs.chdir(material.build)
 
 	if scriptoptions then
