@@ -141,7 +141,7 @@ hex.perform = function(crucible, ...)
 			end
 		end
 
-		log.notice('Starting rituals for ', name)
+		report.incantation(name)
 
 		for j = 1, incantationcount do
 			local ritualname = ritualnames[j]
@@ -150,7 +150,7 @@ hex.perform = function(crucible, ...)
 				ritualname = j
 			end
 
-			log.info('Starting ritual ', ritualname, ' for ', name)
+			report.invocation(name, ritualname)
 
 			local invocation = function()
 				local material = crucible.melted[name]

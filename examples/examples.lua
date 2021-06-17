@@ -1,6 +1,6 @@
 
 -- Set log.level to info, default value doesn't exist but
--- expands to warning. With info, hex might emit some informations,
+-- expands to warning. Starting with notice, hex's log reports emit some informations,
 -- like exposing when rituals for a material are beginning during hex.perform
 log.level = 'info'
 

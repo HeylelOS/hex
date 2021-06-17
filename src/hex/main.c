@@ -14,12 +14,13 @@ static const char version[] =
 
 struct hex_args {
 	const char *progname;
+	const char *report;
 	bool silent;
 };
 
 static void
 hex_usage(const struct hex_args *args, int status) {
-	fprintf(stderr, "usage: %s [-hs] [-C <dir>] rituals...\n", args->progname);
+	fprintf(stderr, "usage: %s [-hs] [-H <report>] [-C <dir>] rituals...\n", args->progname);
 	exit(status);
 }
 
@@ -28,6 +29,7 @@ hex_parse_args(int argc, char **argv) {
 	const char *workdir = NULL;
 	struct hex_args args = {
 		.progname = strrchr(*argv, '/'),
+		.report = NULL,
 		.silent = false,
 	};
 	int c;
@@ -38,13 +40,16 @@ hex_parse_args(int argc, char **argv) {
 		args.progname++;
 	}
 
-	while (c = getopt(argc, argv, ":hsC:"), c != -1) {
+	while (c = getopt(argc, argv, ":hsH:C:"), c != -1) {
 		switch (c) {
 		case 'h':
 			fputs(version, stdout);
 			hex_usage(&args, EXIT_SUCCESS);
 		case 's':
 			args.silent = true;
+			break;
+		case 'H':
+			args.report = optarg;
 			break;
 		case 'C':
 			workdir = optarg;
@@ -55,6 +60,14 @@ hex_parse_args(int argc, char **argv) {
 		default:
 			fprintf(stderr, "%s: Unknown argument -%c\n", args.progname, optopt);
 			hex_usage(&args, EXIT_FAILURE);
+		}
+	}
+
+	if (args.report == NULL) {
+		if (isatty(STDERR_FILENO) != 0) {
+			args.report = "log";
+		} else {
+			args.report = "none";
 		}
 	}
 
@@ -101,11 +114,39 @@ hex_lua_panic(lua_State *L) {
 
 static bool
 hex_lua_runtime_init(lua_State *L, const struct hex_args *args) {
-
+	/*********************
+	 * Generic lua setup *
+	 *********************/
 	luaL_checkversion(L);
 	lua_openlibs(L);
 	lua_atpanic(L, hex_lua_panic);
 
+	/******************
+	 * Report library *
+	 ******************/
+	static const luaL_Reg reportlibraries[] = {
+		{ "report-none", luaopen_report_none },
+		{ "report-log", luaopen_report_log },
+	};
+	static const luaL_Reg * const reportlibrariesend = reportlibraries + sizeof (reportlibraries) / sizeof (*reportlibraries);
+	const luaL_Reg *reportlibrary = reportlibraries;
+
+	while (reportlibrary != reportlibrariesend
+		&& strcmp(reportlibrary->name + 7, args->report) != 0) {
+		reportlibrary++;
+	}
+
+	if (reportlibrary == reportlibrariesend) {
+		fprintf(stderr, "%s: %s: Invalid report type\n", args->progname, args->report);
+		hex_usage(args, EXIT_FAILURE);
+	}
+
+	luaL_requiref(L, reportlibrary->name, reportlibrary->func, 1);
+	lua_setglobal(L, "report");
+
+	/**************************
+	 * Check if hex is silent *
+	 **************************/
 	if (args->silent) {
 		lua_getglobal(L, "hex");
 		lua_pushboolean(L, args->silent);
@@ -113,6 +154,9 @@ hex_lua_runtime_init(lua_State *L, const struct hex_args *args) {
 		lua_pop(L, 1);
 	}
 
+	/****************************
+	 * Loading extended runtime *
+	 ****************************/
 	switch (luaL_loadbufferx(L, hex_runtime, hex_runtime_size, args->progname, "b")) {
 	case LUA_OK:
 		if (lua_pcall(L, 0, 0, 0) == LUA_OK) {
@@ -141,8 +185,8 @@ main(int argc, char **argv) {
 
 			if (luaL_dofile(L, filename) != LUA_OK) {
 				/* NB: If not ok, only the error is pushed on the stack */
-				lua_getglobal(L, "log");
-				lua_getfield(L, -1, "error");
+				lua_getglobal(L, "report");
+				lua_getfield(L, -1, "failure");
 				lua_rotate(L, 1, -1);
 				lua_call(L, 1, 0);
 				retval = EXIT_FAILURE;
