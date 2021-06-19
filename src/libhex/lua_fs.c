@@ -4,15 +4,24 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <fts.h>
 #include <sys/stat.h>
 #include <sys/mount.h>
 #include <libgen.h>
+#include <alloca.h>
 #include <fcntl.h>
 #include <errno.h>
 
-#ifndef MIN
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#ifdef __linux__
+#include <sys/ioctl.h>
+#include <linux/fs.h>
 #endif
+
+struct fs_copy {
+	struct stat *srcst;
+	const char *src, *dest;
+	size_t srclen, destlen;
+};
 
 static int
 lua_fs_isreg(lua_State *L) {
@@ -37,6 +46,241 @@ lua_fs_isexe(lua_State *L) {
 	lua_pushboolean(L, access(luaL_checkstring(L, 1), X_OK) == 0);
 
 	return 1;
+}
+
+static int
+fs_copy_synopsis(lua_State *L, struct fs_copy *root) {
+	struct stat destst;
+
+	if (stat(root->src, root->srcst) != 0) {
+		return luaL_error(L, "fs.copy: stat %s: %s", root->src, strerror(errno));
+	}
+
+	if (stat(root->dest, &destst) != 0) {
+		if (errno != ENOENT) {
+			return luaL_error(L, "fs.copy: stat %s: %s", root->dest, strerror(errno));
+		}
+	} else {
+		if ((root->srcst->st_mode & S_IFMT) != (destst.st_mode & S_IFMT)) {
+			return luaL_error(L, "fs.copy: File type for %s and %s differ", root->src, root->dest);
+		}
+	}
+
+	return 0;
+}
+
+static int
+fs_copy_file(lua_State *L, const struct fs_copy *copy) {
+	int srcfd = open(copy->src, O_RDONLY);
+
+	if (srcfd < 0) {
+		return luaL_error(L, "fs.copy: open %s: %s", copy->src, strerror(errno));
+	}
+
+	int destfd = open(copy->dest, O_WRONLY | O_CREAT | O_TRUNC, copy->srcst->st_mode & 0777);
+
+	if (destfd < 0) {
+		close(srcfd);
+		return luaL_error(L, "fs.copy: open %s: %s", copy->dest, strerror(errno));
+	}
+
+#ifdef __linux__
+	/* Copy on write for supported filesystems on linux */
+	if (ioctl(destfd, FICLONE, srcfd) == 0) {
+		close(srcfd);
+		close(destfd);
+		return 0;
+	}
+#endif
+
+	char block[copy->srcst->st_blksize];
+	ssize_t readval;
+
+	while (readval = read(srcfd, block, sizeof (block)), readval > 0) {
+		const char *current = block;
+		size_t left = readval;
+
+		while (left != 0) {
+			const ssize_t writeval = write(destfd, current, left);
+
+			if (writeval < 0) {
+				return luaL_error(L, "fs.copy: write %s: %s", copy->dest, strerror(errno));
+			}
+
+			current += writeval;
+			left -= writeval;
+		}
+	}
+
+	if (readval != 0) {
+		return luaL_error(L, "fs.copy: read %s: %s", copy->src, strerror(errno));
+	}
+
+	close(srcfd);
+	close(destfd);
+
+	return 0;
+}
+
+static int
+fs_copy_symlink(lua_State *L, const struct fs_copy *copy) {
+	char target[copy->srcst->st_size + 1];
+	ssize_t linklen = readlink(copy->src, target, sizeof (target));
+
+	/* Taking stat's size might not work for every filesystem, better safe than segfault */
+	if (linklen != sizeof (target) - 1) {
+		return luaL_error(L, "fs.copy: readlink %s: %s", copy->src, strerror(errno));
+	}
+	target[linklen] = '\0';
+
+	if (unlink(copy->dest) != 0 && errno != ENOENT) {
+		return luaL_error(L, "fs.copy: unlink %s: %s", copy->dest, strerror(errno));
+	}
+
+	if (symlink(target, copy->dest) != 0) {
+		return luaL_error(L, "fs.copy: symlink %s %s: %s", target, copy->dest, strerror(errno));
+	}
+
+	return 0;
+}
+
+static int
+fs_copy_directory(lua_State *L, const struct fs_copy *copy) {
+
+	if (mkdir(copy->dest, copy->srcst->st_mode & 0777) != 0 && errno != EEXIST) {
+		return luaL_error(L, "fs.copy: mkdir %s: %s", copy->dest, strerror(errno));
+	}
+
+	return 0;
+}
+
+static inline const char *
+fs_copy_destcpy(char *buffer, size_t buffersize, const char *relpath, const char *dest, size_t destlen) {
+	return strncpy(stpncpy(buffer, dest, destlen), relpath, buffersize - destlen) - destlen;
+}
+
+static int
+fs_copy_tree(lua_State *L, const struct fs_copy *root) {
+	char * const paths[] = { strncpy(alloca(root->srclen + 1), root->src, root->srclen + 1), NULL };
+	FTS *ftsp = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
+	FTSENT *entry = fts_read(ftsp);
+
+	/* Skipped first entry, src pre-order */
+	if (entry == NULL) {
+		return luaL_error(L, "fs.copy: fts_read %s: %s", root->src, strerror(errno));
+	}
+
+	/* Create destination if not previously existing */
+	if (mkdir(root->dest, root->srcst->st_mode & 0777) != 0 && errno != EEXIST) {
+		return luaL_error(L, "fs.copy: mkdir %s: %s", root->dest, strerror(errno));
+	}
+
+	while (entry = fts_read(ftsp), entry != NULL) {
+		char dest[root->destlen + entry->fts_pathlen - root->srclen + 2];
+		const struct fs_copy copy = {
+			.srcst = entry->fts_statp,
+			.src = entry->fts_path,
+			.dest = fs_copy_destcpy(dest, sizeof (dest),
+				entry->fts_path + root->srclen, root->dest, root->destlen),
+			.srclen = entry->fts_pathlen,
+			.destlen = sizeof (dest) - 1,
+		};
+		switch (entry->fts_info) {
+		case FTS_D:
+			fs_copy_directory(L, &copy);
+		case FTS_DP:
+			break;
+		case FTS_F:
+			fs_copy_file(L, &copy);
+			break;
+		case FTS_SL:
+		case FTS_SLNONE:
+			fs_copy_symlink(L, &copy);
+			break;
+		case FTS_DNR:
+		case FTS_ERR:
+		case FTS_NS:
+			return luaL_error(L, "fs.copy: fts_read %s: %s", entry->fts_path, strerror(errno));
+		default:
+			return luaL_error(L, "fs.copy: fts_read %s: Unsupported file type", entry->fts_path);
+		}
+	}
+
+	/* Cleanup */
+	if (errno != 0) {
+		return luaL_error(L, "fs.copy: %s to %s: %s", root->src, root->dest, strerror(errno));
+	}
+
+	fts_close(ftsp);
+
+	return 0;
+}
+
+static int
+lua_fs_copy(lua_State *L) {
+	struct stat st;
+	struct fs_copy root;
+
+	root.srcst = &st;
+	root.src = luaL_checklstring(L, 1, &root.srclen),
+	root.dest = luaL_checklstring(L, 2, &root.destlen),
+
+	fs_copy_synopsis(L, &root);
+
+	switch (st.st_mode & S_IFMT) {
+	case S_IFREG:
+		return fs_copy_file(L, &root);
+	case S_IFLNK:
+		return fs_copy_symlink(L, &root);
+	case S_IFDIR:
+		return fs_copy_tree(L, &root);
+	default:
+		return luaL_error(L, "fs.copy: Unsupported copy for file %s to %s", root.src, root.dest);
+	}
+}
+
+static int
+lua_fs_remove(lua_State *L) {
+	size_t length;
+	const char *path = luaL_checklstring(L, 1, &length);
+	char * const paths[] = { strncpy(alloca(length + 1), path, length + 1), NULL };
+	FTS *ftsp = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
+	FTSENT *entry;
+
+	while (entry = fts_read(ftsp), entry != NULL) {
+		switch (entry->fts_info) {
+		case FTS_DP:
+			if (rmdir(entry->fts_path) != 0) {
+				return luaL_error(L, "fs.remove: rmdir %s: %s", entry->fts_path, strerror(errno));
+			}
+		case FTS_D:
+			break;
+		case FTS_F:
+		case FTS_SL:
+		case FTS_SLNONE:
+			if (unlink(entry->fts_path) != 0) {
+				return luaL_error(L, "fs.remove: unlink %s: %s", entry->fts_path, strerror(errno));
+			}
+			break;
+		case FTS_DNR:
+		case FTS_ERR:
+		case FTS_NS:
+			if (errno == ENOENT) {
+				break;
+			}
+			return luaL_error(L, "fs.remove: fts_read %s: %s", entry->fts_path, strerror(errno));
+		default:
+			return luaL_error(L, "fs.remove: fts_read %s: Unsupported file type", entry->fts_path);
+		}
+	}
+
+	if (errno != 0) {
+		return luaL_error(L, "fs.remove: fts_read %s: %s", *paths, strerror(errno));
+	}
+
+	fts_close(ftsp);
+
+	return 0;
 }
 
 static int
@@ -462,6 +706,8 @@ static const luaL_Reg fs_funcs[] = {
 	{ "isreg",    lua_fs_isreg },
 	{ "isdir",    lua_fs_isdir },
 	{ "isexe",    lua_fs_isexe },
+	{ "copy",     lua_fs_copy },
+	{ "remove",   lua_fs_remove },
 	{ "create",   lua_fs_create },
 	{ "read",     lua_fs_read },
 	{ "unlink",   lua_fs_unlink },

@@ -135,10 +135,8 @@ hex.perform = function(crucible, ...)
 
 		if outputs then
 			output = fs.path(outputs, name)
+			fs.remove(output)
 			fs.mkdirs(output)
-			for _, entry in pairs(fs.readdir(output)) do
-				fs.unlink(fs.path(output, entry))
-			end
 		end
 
 		report.incantation(name)
