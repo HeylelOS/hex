@@ -17,7 +17,7 @@ Level can be one of the following:
 - error
 If `log.level` is specified and is a valid level, it specified the minimum level
 for which the printed messages won't be discarded. By default, and if `log.level`
-is not specified, expands to `warning`.
+is not specified, the level is set to `notice`.
 
 ### log.debug (message...)
 

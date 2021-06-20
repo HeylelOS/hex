@@ -10,6 +10,14 @@ Does nothing.
 
 Does nothing.
 
+### report-none.copy (source, destination)
+
+Does nothing.
+
+### report-none.remove (path)
+
+Does nothing.
+
 ### report-none.failure (message)
 
 Does nothing.

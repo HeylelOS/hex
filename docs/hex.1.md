@@ -21,7 +21,7 @@ The following components from the Lua standard libraries still are available:
 ## OPTIONS
 - -h : Prints usage and exits.
 - -s : Silence hex, executed commands through casts and charms won't be printed on standard output.
-- -H \<report\> : Report type to export, valid types are **log** and **none**. If the standard error is a terminal, **log** is the default, else **none** is.
+- -H \<report\> : Report type to export, valid types are **log** and **none**. Default is **log**.
 - -C \<dir\> : Current working directory, changed before doing anything else.
 
 ## AUTHOR

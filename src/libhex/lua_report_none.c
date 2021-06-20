@@ -1,24 +1,16 @@
 #include "hex/lua.h"
 
 static int
-lua_report_none_incantation(lua_State *L) {
-	return 0;
-}
-
-static int
-lua_report_none_invocation(lua_State *L) {
-	return 0;
-}
-
-static int
-lua_report_none_failure(lua_State *L) {
+lua_report_nothing(lua_State *L) {
 	return 0;
 }
 
 static const luaL_Reg report_none_funcs[] = {
-	{ "incantation", lua_report_none_incantation },
-	{ "invocation",  lua_report_none_invocation },
-	{ "failure",     lua_report_none_failure },
+	{ "incantation", lua_report_nothing },
+	{ "invocation",  lua_report_nothing },
+	{ "copy",        lua_report_nothing },
+	{ "remove",      lua_report_nothing },
+	{ "failure",     lua_report_nothing },
 	{ NULL, NULL }
 };
 

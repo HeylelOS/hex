@@ -29,7 +29,7 @@ hex_parse_args(int argc, char **argv) {
 	const char *workdir = NULL;
 	struct hex_args args = {
 		.progname = strrchr(*argv, '/'),
-		.report = NULL,
+		.report = "log",
 		.silent = false,
 	};
 	int c;
@@ -60,14 +60,6 @@ hex_parse_args(int argc, char **argv) {
 		default:
 			fprintf(stderr, "%s: Unknown argument -%c\n", args.progname, optopt);
 			hex_usage(&args, EXIT_FAILURE);
-		}
-	}
-
-	if (args.report == NULL) {
-		if (isatty(STDERR_FILENO) != 0) {
-			args.report = "log";
-		} else {
-			args.report = "none";
 		}
 	}
 

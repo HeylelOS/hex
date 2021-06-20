@@ -1,7 +1,8 @@
 
 -- Set log.level to info, default value doesn't exist but
--- expands to warning. Starting with notice, hex's log reports emit some informations,
--- like exposing when rituals for a material are beginning during hex.perform
+-- expands to notice. Starting with notice, hex's log reports emit some informations,
+-- like exposing when rituals for a material are beginning during hex.perform. Info gives
+-- more informations, like uses of fs.copy and fs.remove.
 log.level = 'info'
 
 -- Create the crucible in the 'build' directory

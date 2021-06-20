@@ -4,10 +4,10 @@
 hex - Hex meta build system Lua interpreter.
 .SH SYNOPSIS
 .PP
-hex [-h] [-C <dir>] rituals...
+hex [-hs] [-H <report>] [-C <dir>] rituals...
 .SH DESCRIPTION
 .PP
-Lua interpreter for the Hex meta build system framework.It exports the five hex libraries: fs, env, log, hash and hex and the hex extended lua runtime.However, it doesn't export the whole Lua standard libraries.This was chosen to restrict scripts to the Hex framework paradigm (explicitly avoiding bad programming practices like, for example, using coroutines when they aren't needed).The following components from the Lua standard libraries still are available:
+Lua interpreter for the Hex meta build system framework.It exports the four hex libraries: fs, env, log and hex and the hex extended lua runtime.And also exports the specified reporting library depending on the given report argument, available as report.However, it doesn't export the whole Lua standard libraries.This was chosen to restrict scripts to the Hex framework paradigm (explicitly avoiding bad programming practices like, for example, using coroutines when they aren't needed).The following components from the Lua standard libraries still are available:
 .PP
 _G: The base components, which regroups every global functions (like print).
 .PP
@@ -19,6 +19,10 @@ utf8: UTF8 related functions
 .SH OPTIONS
 .PP
 -h : Prints usage and exits.
+.PP
+-s : Silence hex, executed commands through casts and charms won't be printed on standard output.
+.PP
+-H <report> : Report type to export, valid types are log and none. Default is log.
 .PP
 -C <dir> : Current working directory, changed before doing anything else.
 .SH AUTHOR

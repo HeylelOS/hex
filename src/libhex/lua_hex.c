@@ -164,8 +164,6 @@ lua_hex_charm(lua_State *L) {
 	}
 	argv[top] = NULL;
 
-	hex_print_command(L, top, argv);
-
 	/* Until here, it was the exact same call as lua_hex_cast, but we will redirect
 	the new process STOUT_FILENO in a pipe and retrieve its value in a lua buffer */
 	int filedes[2];

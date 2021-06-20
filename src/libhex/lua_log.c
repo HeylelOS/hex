@@ -53,7 +53,7 @@ lua_log_print(lua_State *L) {
 	lua_getglobal(L, "log");
 	lua_getfield(L, -1, "level");
 
-	const enum log_level minlevel = luaL_checkoption(L, -1, "warning", log_levels);
+	const enum log_level minlevel = luaL_checkoption(L, -1, "notice", log_levels);
 
 	if (level >= minlevel) {
 		lua_settop(L, top);

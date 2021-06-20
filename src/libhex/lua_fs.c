@@ -239,6 +239,13 @@ lua_fs_copy(lua_State *L) {
 	root.src = luaL_checklstring(L, 1, &root.srclen),
 	root.dest = luaL_checklstring(L, 2, &root.destlen),
 
+	lua_getglobal(L, "report");
+	lua_getfield(L, -1, "copy");
+	lua_pushvalue(L, 1);
+	lua_pushvalue(L, 2);
+	lua_call(L, 2, 0);
+	lua_settop(L, 2);
+
 	fs_copy_synopsis(L, &root);
 
 	switch (st.st_mode & S_IFMT) {
@@ -257,6 +264,13 @@ static int
 lua_fs_remove(lua_State *L) {
 	size_t length;
 	const char *path = luaL_checklstring(L, 1, &length);
+
+	lua_getglobal(L, "report");
+	lua_getfield(L, -1, "remove");
+	lua_pushvalue(L, 1);
+	lua_call(L, 1, 0);
+	lua_settop(L, 1);
+
 	char * const paths[] = { strncpy(alloca(length + 1), path, length + 1), NULL };
 	FTS *ftsp = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
 	FTSENT *entry;
