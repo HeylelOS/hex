@@ -8,8 +8,8 @@ hex - Hex meta build system Lua interpreter.
 
 ## DESCRIPTION
 Lua interpreter for the Hex meta build system framework.
-It exports the five hex libraries: **fs**, **env**, **log**, **hash** and **hex** and the **hex** extended lua runtime.
-And also exports the specified reporting library depending on the given report argument.
+It exports the four hex libraries: **fs**, **env**, **log** and **hex** and the **hex** extended lua runtime.
+And also exports the specified reporting library depending on the given report argument, available as **report**.
 However, it doesn't export the whole Lua standard libraries.
 This was chosen to restrict scripts to the Hex framework paradigm (explicitly avoiding bad programming practices like, for example, using coroutines when they aren't needed).
 The following components from the Lua standard libraries still are available:

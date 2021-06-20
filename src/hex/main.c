@@ -97,7 +97,6 @@ lua_openlibs(lua_State *L) {
 		{ "fs", luaopen_fs },
 		{ "env", luaopen_env },
 		{ "log", luaopen_log },
-		{ "hash", luaopen_hash },
 		{ "hex", luaopen_hex },
 	};
 

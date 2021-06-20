@@ -29,41 +29,10 @@ Removes content at **path**. If **path** is a regular file/symlink, it is unlink
 If **path** is a directory, all content is recursively removed, and then the entry is removed.
 Returns nothing on success, raises an error on any failure.
 
-### fs.create (filename[, content])
-
-Creates or truncates **filename** depending on whether it didn't exist or was already present.
-Fills it with **content** if content is specified.
-Returns nothing on success, raises an error on any failure.
-
-### fs.read (filename)
-
-Returns the content of **filename**, raises an error on failure.
-
-### fs.unlink (path)
-
-_Unlinks_ **path** (see `unlink(2)`). Returns nothing on success, raises an error on failure.
-
-### fs.mkdir (path)
-
-Creates a new directory at **path** if none previously existed (see `mkdir(2)`).
-Note if the directory already exists, an error is generated, use `fs.mkdirs` if you want to
-avoid this behaviour. Returns nothing on success, raises an error on failure.
-
 ### fs.mkdirs (path)
 
 Creates every non-existing directory in **path** as in a `mkdir -p` command.
 If a directory already exists it is not considered an error. If it exists and is not a directory, it is considered an error.
-Returns nothing on success, raises an error on failure.
-
-### fs.readdir (path)
-
-Reads the content of the directory at **path** (see `readdir(3)`).
-Returns the array of all non-hidden entries in **path**, unsorted, on success.
-Raises an error on failure.
-
-### fs.rmdir (path)
-
-Removes the directory at **path** (see `rmdir(2)`).
 Returns nothing on success, raises an error on failure.
 
 ### fs.mount (source, target, filesystemtype[, mountflags]\[, opts])

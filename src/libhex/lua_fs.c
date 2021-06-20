@@ -297,91 +297,6 @@ lua_fs_remove(lua_State *L) {
 	return 0;
 }
 
-static int
-lua_fs_create(lua_State *L) {
-	const char * const path = luaL_checkstring(L, 1);
-	int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-
-	if (fd < 0) {
-		return luaL_error(L, "fs.create: open %s: %s", path, strerror(errno));
-	}
-
-	size_t length;
-	const char * const string = lua_tolstring(L, 2, &length);
-
-	if (string != NULL && length != 0) {
-		const char * current = string, * const end = string + length;
-
-		while (current != end) {
-			const ssize_t writeval = write(fd, current, end - current);
-
-			if (writeval < 0) {
-				close(fd);
-				return luaL_error(L, "fs.create: write %s: %s", path, strerror(errno));
-			}
-
-			current += writeval;
-		}
-	}
-
-	close(fd);
-
-	return 0;
-}
-
-static int
-lua_fs_read(lua_State *L) {
-	const char * const path = luaL_checkstring(L, 1);
-	int fd = open(path, O_RDONLY);
-	luaL_Buffer b;
-
-	if (fd < 0) {
-		return luaL_error(L, "fs.read: open %s: %s", path, strerror(errno));
-	}
-
-	luaL_buffinit(L, &b);
-
-	char *buffer;
-	ssize_t readval;
-	while (buffer = luaL_prepbuffer(&b), readval = read(fd, buffer, LUAL_BUFFERSIZE), readval > 0) {
-		luaL_addsize(&b, readval);
-	}
-
-	const int errcode = errno;
-
-	close(fd);
-
-	if (readval < 0) {
-		return luaL_error(L, "fs.read: read %s: %s", path, strerror(errcode));
-	}
-
-	luaL_pushresult(&b);
-
-	return 1;
-}
-
-static int
-lua_fs_unlink(lua_State *L) {
-	const char * const path = luaL_checkstring(L, 1);
-
-	if (unlink(path) != 0) {
-		return luaL_error(L, "fs.unlink: unlink %s: %s", path, strerror(errno));
-	}
-
-	return 0;
-}
-
-static int
-lua_fs_mkdir(lua_State *L) {
-	const char * const path = luaL_checkstring(L, 1);
-
-	if (mkdir(path, 0777) != 0) {
-		return luaL_error(L, "fs.mkdir: mkdir %s: %s", path, strerror(errno));
-	}
-
-	return 0;
-}
-
 static bool
 fs_parent_separator(const char *path, char **separatorp) {
 	char *separator = strchr(path, '/');
@@ -431,49 +346,6 @@ lua_fs_mkdirs(lua_State *L) {
 		if (errcode != EEXIST || (stat(buffer, &st) == 0 && (st.st_mode & S_IFMT) != S_IFDIR)) {
 			return luaL_error(L, "fs.mkdirs: mkdir %s: %s", buffer, strerror(errcode));
 		}
-	}
-
-	return 0;
-}
-
-static int
-lua_fs_readdir(lua_State *L) {
-	const char * const path = luaL_checkstring(L, 1);
-	DIR *dirp = opendir(path);
-
-	if (dirp == NULL) {
-		return luaL_error(L, "fs.readdir: opendir %s: %s", path, strerror(errno));
-	}
-
-	struct dirent *entry;
-	int index = 1;
-
-	lua_newtable(L);
-	while (errno = 0, entry = readdir(dirp), entry != NULL) {
-		if (*entry->d_name != '.') {
-			lua_pushstring(L, entry->d_name);
-			lua_rawseti(L, -2, index);
-			index++;
-		}
-	}
-
-	const int errcode = errno;
-
-	closedir(dirp);
-
-	if (errcode != 0) {
-		return luaL_error(L, "fs.readdir: readdir %s: %s", path, strerror(errcode));
-	}
-
-	return 1;
-}
-
-static int
-lua_fs_rmdir(lua_State *L) {
-	const char * const path = luaL_checkstring(L, 1);
-
-	if (rmdir(path) != 0) {
-		return luaL_error(L, "fs.rmdir: rmdir %s: %s", path, strerror(errno));
 	}
 
 	return 0;
@@ -722,13 +594,7 @@ static const luaL_Reg fs_funcs[] = {
 	{ "isexe",    lua_fs_isexe },
 	{ "copy",     lua_fs_copy },
 	{ "remove",   lua_fs_remove },
-	{ "create",   lua_fs_create },
-	{ "read",     lua_fs_read },
-	{ "unlink",   lua_fs_unlink },
-	{ "mkdir",    lua_fs_mkdir },
 	{ "mkdirs",   lua_fs_mkdirs },
-	{ "readdir",  lua_fs_readdir },
-	{ "rmdir",    lua_fs_rmdir },
 	{ "mount",    lua_fs_mount },
 	{ "umount",   lua_fs_umount },
 	{ "pwd",      lua_fs_pwd },

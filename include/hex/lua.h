@@ -15,9 +15,6 @@ int
 luaopen_log(lua_State *L);
 
 int
-luaopen_hash(lua_State *L);
-
-int
 luaopen_report_none(lua_State *L);
 
 int
