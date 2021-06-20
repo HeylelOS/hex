@@ -9,7 +9,7 @@ hex.rituals['kbuild-configure'] = function(name, material)
 		local config = setup.config
 
 		if config then
-			hex.cast('cp', '--', config, fs.path(source, '.config'))
+			fs.copy(config, fs.path(source, '.config'))
 		end
 
 		if setup.target then

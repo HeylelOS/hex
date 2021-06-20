@@ -12,6 +12,10 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#ifdef __APPLE__
+#include <sys/clonefile.h>
+#endif
+
 #ifdef __linux__
 #include <sys/ioctl.h>
 #include <linux/fs.h>
@@ -71,6 +75,11 @@ fs_copy_synopsis(lua_State *L, struct fs_copy *root) {
 
 static int
 fs_copy_file(lua_State *L, const struct fs_copy *copy) {
+#ifdef __APPLE__
+	if (clonefile(copy->src, copy->dest, 0) == 0) {
+		return 0;
+	}
+#endif
 	int srcfd = open(copy->src, O_RDONLY);
 
 	if (srcfd < 0) {
@@ -124,6 +133,11 @@ fs_copy_file(lua_State *L, const struct fs_copy *copy) {
 
 static int
 fs_copy_symlink(lua_State *L, const struct fs_copy *copy) {
+#ifdef __APPLE__
+	if (clonefile(copy->src, copy->dest, CLONE_NOFOLLOW) == 0) {
+		return 0;
+	}
+#endif
 	char target[copy->srcst->st_size + 1];
 	ssize_t linklen = readlink(copy->src, target, sizeof (target));
 
