@@ -17,8 +17,8 @@ and returns nothing if it succeeded.
 
 Executes **program** with the following **arguments**.
 If `hex.silent` is `true`, does not print command on standard output.
-Waits the process for termination, raises an error if it failed
-and returns its _standard output_ if it succeeded.
+Waits the process for termination, raises an error if it failed.
+Returns its _standard output_, with the last line delimiter removed, if it succeeded.
 
 ### hex.crucible (molten)
 

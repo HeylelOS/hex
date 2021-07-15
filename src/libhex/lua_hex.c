@@ -209,6 +209,11 @@ lua_hex_charm(lua_State *L) {
 		return luaL_error(L, "hex.charm: read: %s", strerror(errcode));
 	}
 
+	const size_t len = luaL_bufflen(&b);
+	if (len != 0 && luaL_buffaddr(&b)[len - 1] == '\n') {
+		luaL_buffsub(&b, 1);
+	}
+
 	luaL_pushresult(&b);
 
 	hex_wait_pid(L, "hex.charm", pid);
