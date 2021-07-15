@@ -72,6 +72,7 @@ if(DOXYGEN_FOUND AND DOXYGEN_VERSION VERSION_GREATER_EQUAL 1.8.0)
 		docs/library/log.md
 		docs/library/env.md
 		docs/library/fs.md
+		docs/rituals.md
 		docs/hex.1.md
 	)
 endif()

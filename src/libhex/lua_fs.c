@@ -8,7 +8,6 @@
 #include <sys/stat.h>
 #include <sys/mount.h>
 #include <libgen.h>
-#include <alloca.h>
 #include <fcntl.h>
 #include <errno.h>
 
@@ -175,7 +174,8 @@ fs_copy_destcpy(char *buffer, size_t buffersize, const char *relpath, const char
 
 static int
 fs_copy_tree(lua_State *L, const struct fs_copy *root) {
-	char * const paths[] = { strncpy(alloca(root->srclen + 1), root->src, root->srclen + 1), NULL };
+	char buffer[root->srclen + 1];
+	char * const paths[] = { strncpy(buffer, root->src, sizeof (buffer)), NULL };
 	FTS *ftsp = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
 	FTSENT *entry = fts_read(ftsp);
 
@@ -262,51 +262,62 @@ lua_fs_copy(lua_State *L) {
 
 static int
 lua_fs_remove(lua_State *L) {
-	size_t length;
-	const char *path = luaL_checklstring(L, 1, &length);
+	const int top = lua_gettop(L);
+	const char *removed[top];
+	size_t lengths[top];
 
-	lua_getglobal(L, "report");
-	lua_getfield(L, -1, "remove");
-	lua_pushvalue(L, 1);
-	lua_call(L, 1, 0);
-	lua_settop(L, 1);
-
-	char * const paths[] = { strncpy(alloca(length + 1), path, length + 1), NULL };
-	FTS *ftsp = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
-	FTSENT *entry;
-
-	while (entry = fts_read(ftsp), entry != NULL) {
-		switch (entry->fts_info) {
-		case FTS_DP:
-			if (rmdir(entry->fts_path) != 0) {
-				return luaL_error(L, "fs.remove: rmdir %s: %s", entry->fts_path, strerror(errno));
-			}
-		case FTS_D:
-			break;
-		case FTS_F:
-		case FTS_SL:
-		case FTS_SLNONE:
-			if (unlink(entry->fts_path) != 0) {
-				return luaL_error(L, "fs.remove: unlink %s: %s", entry->fts_path, strerror(errno));
-			}
-			break;
-		case FTS_DNR:
-		case FTS_ERR:
-		case FTS_NS:
-			if (errno == ENOENT) {
-				break;
-			}
-			return luaL_error(L, "fs.remove: fts_read %s: %s", entry->fts_path, strerror(errno));
-		default:
-			return luaL_error(L, "fs.remove: fts_read %s: Unsupported file type", entry->fts_path);
+	if (top != 0) {
+		/* Reporting removals, duplicate the stack for reporting */
+		lua_getglobal(L, "report");
+		lua_getfield(L, -1, "remove");
+		for (int i = 1; i <= top; i++) {
+			removed[i - 1] = luaL_checklstring(L, i, lengths + i - 1);
+			lua_pushvalue(L, i);
 		}
+		lua_call(L, top, 0);
+		lua_settop(L, top);
 	}
 
-	if (errno != 0) {
-		return luaL_error(L, "fs.remove: fts_read %s: %s", *paths, strerror(errno));
-	}
+	/* Remove paths */
+	for (int i = 1; i <= top; i++) {
+		char buffer[lengths[i - 1] + 1];
+		char * const paths[] = { strncpy(buffer, removed[i - 1], sizeof (buffer)), NULL };
+		FTS *ftsp = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
+		FTSENT *entry;
 
-	fts_close(ftsp);
+		while (entry = fts_read(ftsp), entry != NULL) {
+			switch (entry->fts_info) {
+			case FTS_DP:
+				if (rmdir(entry->fts_path) != 0) {
+					return luaL_error(L, "fs.remove: rmdir %s: %s", entry->fts_path, strerror(errno));
+				}
+			case FTS_D:
+				break;
+			case FTS_F:
+			case FTS_SL:
+			case FTS_SLNONE:
+				if (unlink(entry->fts_path) != 0) {
+					return luaL_error(L, "fs.remove: unlink %s: %s", entry->fts_path, strerror(errno));
+				}
+				break;
+			case FTS_DNR:
+			case FTS_ERR:
+			case FTS_NS:
+				if (errno == ENOENT) {
+					break;
+				}
+				return luaL_error(L, "fs.remove: fts_read %s: %s", entry->fts_path, strerror(errno));
+			default:
+				return luaL_error(L, "fs.remove: fts_read %s: Unsupported file type", entry->fts_path);
+			}
+		}
+
+		if (errno != 0) {
+			return luaL_error(L, "fs.remove: fts_read %s: %s", removed[i - 1], strerror(errno));
+		}
+
+		fts_close(ftsp);
+	}
 
 	return 0;
 }
@@ -332,33 +343,37 @@ fs_parent_separator(const char *path, char **separatorp) {
 
 static int
 lua_fs_mkdirs(lua_State *L) {
-	size_t length;
-	const char * const path = luaL_checklstring(L, 1, &length);
-	char buffer[length + 1];
+	const int top = lua_gettop(L);
 
-	strncpy(buffer, path, sizeof (buffer));
+	for (int i = 1; i <= top; i++) {
+		size_t length;
+		const char * const path = luaL_checklstring(L, i, &length);
+		char buffer[length + 1];
 
-	char *current = buffer, *separator;
-	while (fs_parent_separator(current, &separator)) {
-		*separator = '\0';
+		strncpy(buffer, path, sizeof (buffer));
 
-		if (mkdir(buffer, 0777) != 0 && errno != EEXIST) {
-			return luaL_error(L, "fs.mkdirs: mkdir %s: %s", buffer, strerror(errno));
+		char *current = buffer, *separator;
+		while (fs_parent_separator(current, &separator)) {
+			*separator = '\0';
+
+			if (mkdir(buffer, 0777) != 0 && errno != EEXIST) {
+				return luaL_error(L, "fs.mkdirs: mkdir %s: %s", buffer, strerror(errno));
+			}
+
+			*separator = '/';
+			separator++;
+
+			current = separator;
 		}
 
-		*separator = '/';
-		separator++;
+		if (mkdir(buffer, 0777) != 0) {
+			int const errcode = errno;
+			struct stat st;
 
-		current = separator;
-	}
-
-	if (mkdir(buffer, 0777) != 0) {
-		int const errcode = errno;
-		struct stat st;
-
-		/* In case of error, or, if it already exists, is not a directory */
-		if (errcode != EEXIST || (stat(buffer, &st) == 0 && (st.st_mode & S_IFMT) != S_IFDIR)) {
-			return luaL_error(L, "fs.mkdirs: mkdir %s: %s", buffer, strerror(errcode));
+			/* In case of error, or, if it already exists, is not a directory */
+			if (errcode != EEXIST || (stat(buffer, &st) == 0 && (st.st_mode & S_IFMT) != S_IFDIR)) {
+				return luaL_error(L, "fs.mkdirs: mkdir %s: %s", buffer, strerror(errcode));
+			}
 		}
 	}
 

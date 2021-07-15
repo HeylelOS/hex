@@ -23,15 +23,15 @@ If **source** is a directory, all its content is recursively copied in **destina
 On supported systems, files are copied using copy on write if the underlying filesystem supports it.
 Returns nothing on success, raises an error on any failure.
 
-### fs.remove (path)
+### fs.remove ([paths...])
 
-Removes content at **path**. If **path** is a regular file/symlink, it is unlinked.
-If **path** is a directory, all content is recursively removed, and then the entry is removed.
+Removes content at **paths**. If one of **paths** is a regular file/symlink, it is unlinked.
+If one of **paths** is a directory, all content is recursively removed, and then the entry is removed.
 Returns nothing on success, raises an error on any failure.
 
-### fs.mkdirs (path)
+### fs.mkdirs ([paths...])
 
-Creates every non-existing directory in **path** as in a `mkdir -p` command.
+Creates every non-existing directory in **paths** as in a `mkdir -p` command.
 If a directory already exists it is not considered an error. If it exists and is not a directory, it is considered an error.
 Returns nothing on success, raises an error on failure.
 

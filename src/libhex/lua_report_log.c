@@ -59,15 +59,20 @@ static int
 lua_report_log_remove(lua_State *L) {
 	const int top = lua_gettop(L);
 
-	if (top != 1) {
-		return luaL_error(L, "report-log.copy: Expected 1 argument, found %d", top);
+	if (top == 0) {
+		lua_pushliteral(L, "report-log.copy: Expected at least 1 argument, found none");
+		return lua_error(L);
 	}
 
 	lua_getglobal(L, "log");
 	lua_getfield(L, -1, "info");
 	lua_pushliteral(L, "Removing file(s) at ");
 	lua_rotate(L, 1, -1);
-	lua_call(L, 2, 0);
+	for (int separators = top - 1; separators != 0; separators--) {
+		lua_pushliteral(L, ", ");
+		lua_rotate(L, 1, -1);
+	}
+	lua_call(L, 2 * top, 0);
 
 	return 0;
 }

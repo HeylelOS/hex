@@ -64,5 +64,3 @@ cmake --install .
 Documentation is built mainly from markdown pages. If doxygen is available,
 you can build it using the `doc` rule with cmake.
 
-Documentation concerning rituals is not yet available, as behaviour is not stable yet.
-
