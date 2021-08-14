@@ -5,8 +5,8 @@
 -- more informations, like uses of fs.copy and fs.remove.
 log.level = 'info'
 
--- Create the crucible in the 'build' directory
-local crucible = hex.crucible('build')
+-- Create the crucible in the 'forge' directory
+local crucible = hex.crucible('forge')
 
 -- Add isolation properties, if we have a complete toolchain
 -- we could isolate the build using the 'filesystem' member

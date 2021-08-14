@@ -108,7 +108,7 @@ Executes the `material.source`'s `Makefile` in the `material.source` directory:
 ## kbuild-configure
 
 Configures a build for a Kbuild based source tree.
-Executes the `Makefile` in the source tree for a specified target, takes two parameters:
+Copies in the working directory, executes the `Makefile` in the `m̀aterial.source` directory, takes two parameters:
 - target: Target the `Makefile` will run, `defconfig` if none specified.
 - config: A file or directory copied in the `material.source` tree as `.config`.
 

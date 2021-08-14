@@ -13,8 +13,6 @@ option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 
 find_package(Lua 5.3.0 REQUIRED)
 
-include_directories(include ${LUA_INCLUDE_DIR})
-
 # Compiling tools
 
 file(GLOB_RECURSE BIN2SRC_SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/tools/bin2src/*.c)
@@ -46,13 +44,12 @@ add_executable(hex ${HEX_SOURCES})
 file(GLOB_RECURSE LIBHEX_SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/libhex/*.c)
 add_library(libhex ${LIBHEX_SOURCES} ${PROJECT_BINARY_DIR}/luac.out.c)
 
+target_include_directories(libhex PUBLIC include ${LUA_INCLUDE_DIR})
+
 target_link_libraries(hex PUBLIC libhex)
 target_link_libraries(libhex PUBLIC ${LUA_LIBRARIES})
 
-set_target_properties(libhex PROPERTIES
-	OUTPUT_NAME hex
-	PUBLIC_HEADER include/hex/lua.h
-)
+set_target_properties(libhex PROPERTIES OUTPUT_NAME hex)
 
 #################
 # Documentation #
@@ -81,8 +78,6 @@ endif()
 # Install #
 ###########
 
-install(
-	TARGETS hex libhex
-	RUNTIME LIBRARY ARCHIVE PUBLIC_HEADER
-)
+install(TARGETS hex libhex RUNTIME LIBRARY ARCHIVE)
+install(DIRECTORY include/hex TYPE INCLUDE)
 

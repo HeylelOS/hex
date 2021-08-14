@@ -33,6 +33,8 @@ It is also well documented and its C interface makes it a good choice for cross-
 
 - [x] Targets dependencies
 - [x] Environment variable forwarding
+- [ ] File configuration with @ rules
+- [ ] Packaging
 
 Hex supports the following isolation capabilites:
 - [x] User/Group isolation (Linux specific implementation)
