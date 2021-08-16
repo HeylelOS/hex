@@ -78,6 +78,17 @@ The created material is created with the following attributes:
 - `setup`: Empty table of miscellaneous setup informations to forward to rituals.
 - `env`: Empty table of environment variables to add to the rituals processes.
 
+### hex.preprocess (source, destination, variables)
+
+Preprocesses the `source` file into the `destination` file, creating or truncating the latest accordingly.
+Replaces every occurence of any `@<variable>@` in `source` with the content of the `<variable>` key in table `variables`.
+If the value associated with the `<variable>` key cannot be coerced into a string, it is replaced by an empty string.
+If the file is terminated before the closing of any @ pattern, it should be considered an undefined behavior.
+No truncation is performed for the content enclosed between @s.
+- `source`: The pattern file.
+- `destination`: The output file where variables are to be expanded.
+- `variables`: A table, indexing keys with their associated replacements. No metamethod is to be called on table, replacement is done by raw access.
+
 ### hex.perform (crucible[, rituals...])
 
 Invoke every ritual in **rituals** for each `melted` material according to an order

@@ -2,7 +2,6 @@
 #include "hex/lua.h"
 
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -431,12 +430,137 @@ lua_hex_hinderuser(lua_State *L) {
 	return 0;
 }
 
+static int
+hex_preprocess(lua_State *L, int fd, FILE *output) {
+	enum preprocessor_state {
+		PREPROCESSOR_STATE_PRINT,
+		PREPROCESSOR_STATE_BEGIN_AT,
+		PREPROCESSOR_STATE_FILLS_AT,
+	} state = PREPROCESSOR_STATE_PRINT;
+	char buffer[getpagesize()];
+	ssize_t readval;
+
+	/* Read as many as we can */
+	while (readval = read(fd, buffer, sizeof (buffer)), readval > 0) {
+		const char *current = buffer;
+		size_t left = readval;
+
+		/* Until everything read is done, execute state. */
+		while (left != 0) {
+			switch (state) {
+			case PREPROCESSOR_STATE_PRINT: {
+				/* Forward read data directly onto the output */
+				const char *at = memchr(current, '@', left);
+				size_t n;
+
+				if (at != NULL) {
+					state = PREPROCESSOR_STATE_BEGIN_AT;
+					n = at - current;
+				} else {
+					n = left;
+				}
+
+				if (fwrite(current, sizeof (*current), n, output) != n) {
+					return -1;
+				}
+
+				current += n;
+				left -= n;
+			} break;
+			case PREPROCESSOR_STATE_BEGIN_AT:
+				/* Add a new accumulator string on the stack */
+				state = PREPROCESSOR_STATE_FILLS_AT;
+				lua_pushliteral(L, "");
+				current++;
+				left--;
+				break;
+			case PREPROCESSOR_STATE_FILLS_AT: {
+				/* Concatenate what we have with the accumulator string,
+				 * if we have what we need, access the table left at index 3,
+				 * and print its content if one is available, if none available,
+				 * nothing is to be printed. */
+				const char *at = memchr(current, '@', left);
+				size_t n;
+
+				if (at != NULL) {
+					const char *value;
+					size_t length;
+
+					state = PREPROCESSOR_STATE_PRINT;
+					n = at - current;
+
+					lua_pushlstring(L, current, n);
+					lua_concat(L, 2);
+					lua_rawget(L, 3);
+					value = lua_tolstring(L, -1, &length);
+
+					if (value != NULL && fwrite(value, sizeof (*value), length, output) != length) {
+						return -1;
+					}
+
+					lua_settop(L, 3);
+					n++;
+				} else {
+					n = left;
+					lua_pushlstring(L, current, n);
+					lua_concat(L, 2);
+				}
+
+				current += n;
+				left -= n;
+			} break;
+			}
+		}
+	}
+
+	return 0;
+}
+
+static int
+lua_hex_preprocess(lua_State *L) {
+	const char *source = luaL_checkstring(L, 1);
+	const char *destination = luaL_checkstring(L, 2);
+	int haserror = 0;
+
+	luaL_checktype(L, 3, LUA_TTABLE);
+
+	const int fd = open(source, O_RDONLY);
+	if (fd >= 0) {
+		FILE * const output = fopen(destination, "w");
+
+		if (output != NULL) {
+
+			if (hex_preprocess(L, fd, output) != 0) {
+				lua_pushfstring(L, "hex.preprocess: Unable to process '%s' into '%s': %s", source, destination, strerror(errno));
+				haserror = 1;
+			}
+
+			fclose(output);
+		} else {
+			lua_pushfstring(L, "hex.preprocess: fopen '%s': %s", destination, strerror(errno));
+			haserror = 1;
+		}
+
+		close(fd);
+	} else {
+		lua_pushfstring(L, "hex.preprocess: open '%s': %s", source, strerror(errno));
+		haserror = 1;
+	}
+
+	if (haserror != 0) {
+		return lua_error(L);
+	}
+
+	return 0;
+}
+
 static const luaL_Reg hex_funcs[] = {
 	{ "exit",        lua_hex_exit },
 	{ "cast",        lua_hex_cast },
 	{ "charm",       lua_hex_charm },
 	{ "invoke",      lua_hex_invoke },
 	{ "incantation", lua_hex_incantation },
+	{ "preprocess",  lua_hex_preprocess },
 	{ "hinderuser",  lua_hex_hinderuser },
 	{ NULL, NULL }
 };
