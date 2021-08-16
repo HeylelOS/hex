@@ -26,6 +26,12 @@ Creates the crucible `molten` directory if it didn't already exist (cf. `fs.mkdi
 Returns a new crucible, with its `molten` attribute set to **molten**.
 Its `schackle`, `melted` and `env` all initialized as empty tables.
 
+### hex.dofile (filename[, arguments...])
+
+Loads an runs the given file, forwarding the given arguments.
+Raises an error if unable to load the chunk, or if the chunk raises any.
+Returns the file's code chunk return values if any.
+
 ### hex.exit ([status])
 
 Exits the script with the given **status**.

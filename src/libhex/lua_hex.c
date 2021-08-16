@@ -554,6 +554,24 @@ lua_hex_preprocess(lua_State *L) {
 	return 0;
 }
 
+static int
+lua_hex_dofile(lua_State *L) {
+	const char *filename = luaL_checkstring(L, 1);
+	const int top = lua_gettop(L);
+
+	if (luaL_loadfile(L, filename) != LUA_OK) {
+		return luaL_error(L, "hex.dofile: Unable to load file '%s'");
+	}
+
+	lua_rotate(L, 1, -1); /* Put the filename on the top */
+	lua_settop(L, top); /* Remove filename from the top */
+	lua_rotate(L, 1, 1); /* Set the function on the bottom */
+
+	lua_call(L, top - 1, LUA_MULTRET);
+
+	return lua_gettop(L); /* Forward all returned values if no error occured */
+}
+
 static const luaL_Reg hex_funcs[] = {
 	{ "exit",        lua_hex_exit },
 	{ "cast",        lua_hex_cast },
@@ -562,6 +580,7 @@ static const luaL_Reg hex_funcs[] = {
 	{ "incantation", lua_hex_incantation },
 	{ "preprocess",  lua_hex_preprocess },
 	{ "hinderuser",  lua_hex_hinderuser },
+	{ "dofile",      lua_hex_dofile },
 	{ NULL, NULL }
 };
 
