@@ -524,6 +524,14 @@ lua_hex_preprocess(lua_State *L) {
 
 	luaL_checktype(L, 3, LUA_TTABLE);
 
+	lua_getglobal(L, "report");
+	lua_getfield(L, -1, "preprocess");
+	lua_pushvalue(L, 1);
+	lua_pushvalue(L, 2);
+	lua_pushvalue(L, 3);
+	lua_call(L, 3, 0);
+	lua_settop(L, 3);
+
 	const int fd = open(source, O_RDONLY);
 	if (fd >= 0) {
 		FILE * const output = fopen(destination, "w");

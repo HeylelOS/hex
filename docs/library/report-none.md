@@ -18,6 +18,10 @@ Does nothing.
 
 Does nothing.
 
+### report-none.preprocess (source, destination, variables)
+
+Does nothing.
+
 ### report-none.failure (message)
 
 Does nothing.

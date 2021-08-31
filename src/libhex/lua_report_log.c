@@ -78,6 +78,25 @@ lua_report_log_remove(lua_State *L) {
 }
 
 static int
+lua_report_log_preprocess(lua_State *L) {
+	const int top = lua_gettop(L);
+
+	if (top != 3) {
+		return luaL_error(L, "report-log.copy: Expected 3 arguments, found %d", top);
+	}
+
+	lua_getglobal(L, "log");
+	lua_getfield(L, -1, "info");
+	lua_pushliteral(L, "Preprocessing ");
+	lua_rotate(L, 1, -2);
+	lua_pushliteral(L, " into ");
+	lua_rotate(L, -2, 1);
+	lua_call(L, 4, 0);
+
+	return 0;
+}
+
+static int
 lua_report_log_failure(lua_State *L) {
 	const int top = lua_gettop(L);
 
@@ -98,6 +117,7 @@ static const luaL_Reg report_log_funcs[] = {
 	{ "invocation",  lua_report_log_invocation },
 	{ "copy",        lua_report_log_copy },
 	{ "remove",      lua_report_log_remove },
+	{ "preprocess",  lua_report_log_preprocess },
 	{ "failure",     lua_report_log_failure },
 	{ NULL, NULL }
 };

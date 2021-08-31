@@ -10,6 +10,7 @@ static const luaL_Reg report_none_funcs[] = {
 	{ "invocation",  lua_report_nothing },
 	{ "copy",        lua_report_nothing },
 	{ "remove",      lua_report_nothing },
+	{ "preprocess",  lua_report_nothing },
 	{ "failure",     lua_report_nothing },
 	{ NULL, NULL }
 };

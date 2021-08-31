@@ -2,8 +2,8 @@
 
 Internally used library to report execution.
 `report` is not directly defined as a library, but redirects to
-others report libraries, such as `report-none` (doing nothing) or `report-log` (logging the informations).
-It can be overriden to satisfy any behaviour.
+other report libraries, such as `report-none` (doing nothing) or `report-log` (logging to console).
+It can be overriden to satisfy any desired behaviour.
 
 ### report.incantation (name)
 
@@ -22,6 +22,10 @@ Reports the beginning of a copy of file(s) from **source** to **destination**.
 ### report.remove (path)
 
 Reports the beginning of a removal of file(s) at **path**.
+
+### report.preprocess (source, destination, variables)
+
+Reports the beginning of the preprocessing of **source** into **destination** according to **variables**.
 
 ### report.failure (message)
 
