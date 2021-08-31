@@ -14,13 +14,14 @@ static const char version[] =
 
 struct hex_args {
 	const char *progname;
+	const char *loglevel;
 	const char *report;
 	bool silent;
 };
 
 static void
 hex_usage(const struct hex_args *args, int status) {
-	fprintf(stderr, "usage: %s [-hs] [-H <report>] [-C <dir>] rituals...\n", args->progname);
+	fprintf(stderr, "usage: %s [-hs] [-L <loglevel>] [-H <report>] [-C <dir>] rituals...\n", args->progname);
 	exit(status);
 }
 
@@ -29,6 +30,7 @@ hex_parse_args(int argc, char **argv) {
 	const char *workdir = NULL;
 	struct hex_args args = {
 		.progname = strrchr(*argv, '/'),
+		.loglevel = NULL,
 		.report = "log",
 		.silent = false,
 	};
@@ -40,13 +42,16 @@ hex_parse_args(int argc, char **argv) {
 		args.progname++;
 	}
 
-	while (c = getopt(argc, argv, ":hsH:C:"), c != -1) {
+	while (c = getopt(argc, argv, ":hsL:H:C:"), c != -1) {
 		switch (c) {
 		case 'h':
 			fputs(version, stdout);
 			hex_usage(&args, EXIT_SUCCESS);
 		case 's':
 			args.silent = true;
+			break;
+		case 'L':
+			args.loglevel = optarg;
 			break;
 		case 'H':
 			args.report = optarg;
@@ -111,6 +116,16 @@ hex_lua_runtime_init(lua_State *L, const struct hex_args *args) {
 	luaL_checkversion(L);
 	lua_openlibs(L);
 	lua_atpanic(L, hex_lua_panic);
+
+	/*************
+	 * Log level *
+	 *************/
+	if (args->loglevel != NULL) {
+		lua_getglobal(L, "log");
+		lua_pushstring(L, args->loglevel);
+		lua_setfield(L, -2, "level");
+		lua_pop(L, 1);
+	}
 
 	/******************
 	 * Report library *

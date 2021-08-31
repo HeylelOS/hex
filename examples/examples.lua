@@ -1,9 +1,11 @@
 
--- Set log.level to info, default value doesn't exist but
+-- If log.level is not set, set it to info, default value doesn't exist but
 -- expands to notice. Starting with notice, hex's log reports emit some informations,
 -- like exposing when rituals for a material are beginning during hex.perform. Info gives
 -- more informations, like uses of fs.copy and fs.remove.
-log.level = 'info'
+if not log.level then
+	log.level = 'info'
+end
 
 -- Create the crucible in the 'forge' directory
 local crucible = hex.crucible('forge')

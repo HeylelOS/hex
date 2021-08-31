@@ -4,7 +4,7 @@
 hex - Hex meta build system Lua interpreter.
 
 ## SYNOPSIS
-- **hex** [-hs] [-H \<report\>] [-C \<dir\>] rituals...
+- **hex** [-hs] [-L \<loglevel\>] [-H \<report\>] [-C \<dir\>] rituals...
 
 ## DESCRIPTION
 Lua interpreter for the Hex meta build system framework.
@@ -21,6 +21,7 @@ The following components from the Lua standard libraries still are available:
 ## OPTIONS
 - -h : Prints usage and exits.
 - -s : Silence hex, executed commands through casts and charms won't be printed on standard output.
+- -L \<loglevel\> : Shortcut to set **log.level**, if none is specified, nothing will be set.
 - -H \<report\> : Report type to export, valid types are **log** and **none**. Default is **log**.
 - -C \<dir\> : Current working directory, changed before doing anything else.
 
