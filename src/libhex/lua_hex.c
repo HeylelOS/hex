@@ -568,7 +568,7 @@ lua_hex_dofile(lua_State *L) {
 	const int top = lua_gettop(L);
 
 	if (luaL_loadfile(L, filename) != LUA_OK) {
-		return luaL_error(L, "hex.dofile: Unable to load file '%s'");
+		return luaL_error(L, "hex.dofile: Unable to load file '%s': %s", filename, strerror(errno));
 	}
 
 	lua_rotate(L, 1, -1); /* Put the filename on the top */
