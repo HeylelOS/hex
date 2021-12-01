@@ -35,9 +35,9 @@ do -- GNU configure. build & install rituals are shared with UNIX
 	local material = hex.melt(crucible, 'gnu-hello')
 	material.setup = {
 		configure = {
+			autoreconf = { '-i', }, -- Should install what's missing, will be done in source tree
 			script = fs.path('../../..', material.source, 'configure'), -- Putting relative paths everywhere to keep traces relative
-			autooptions = { '-i', }, -- Should install what's missing, will be done in source tree
-			scriptoptions = { '--prefix=/', }, -- Install in /, not /usr/local, the default
+			options = { '--prefix=/', }, -- Install in /, not /usr/local, the default
 		};
 		install = { options = { 'DESTDIR='..fs.path('../..', fs.basename(staging)), } };
 	}

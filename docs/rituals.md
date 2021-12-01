@@ -56,12 +56,13 @@ It supports override for the key `build`.
 Uses cmake to perform a build from the `material.source` to the `material.build`.
 It supports the following parameters, passed along to the `cmake --build` command:
 - options
-- build\_tool\_options
+- arguments
 
 ## cmake-configure
 
 Uses cmake to configure the `material.source` to be built into `material.build`.
-It supports the following parameter, passed along to the `cmake` command:
+It supports the following parameters, passed along to the `cmake` command:
+- variables: Key/Value table of cache variables, translated and appended to the command line options.
 - options
 
 ## cmake-install
@@ -85,9 +86,9 @@ It supports override for the key `configure`.
 
 Uses GNU autotools to configure the `material.source` tree, the configure script executed is executed in the `material.build` directory.
 It supports the following parameters:
-- autooptions: Options passed to `autoreconf`, when autoreconfing the `material.source`.
+- autoreconf: Options passed to `autoreconf`, when autoreconfing the `material.source`.
 - script: Script used to configure the build tree. If not specified, expanded to an absolute path pointing to a `configure` script at the top of the source tree.
-- scriptoptions: Options passed to the configure script.
+- options: Options passed to the configure script.
 
 ## install
 
@@ -127,7 +128,7 @@ Executes the `material.build`'s `Makefile` in the `material.build` directory:
 
 Executes the `material.source`'s `configure` script in the `material.build` directory.
 - script: Script used to configure the build tree. If not specified, expanded to an absolute path pointing to a `configure` script at the top of the source tree.
-- scriptoptions: Options passed to the configure script.
+- options: Options passed to the configure script.
 
 ## unix-install
 
