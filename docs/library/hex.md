@@ -74,10 +74,10 @@ Returns if successful, raises an error if the process didn't return successfully
 
 Adds the specified **source** directory as a material to the **crucible**'s `melted`.
 The source's name will be its _basename_ (cf. `fs.basename`), invalid if it is a hidden file or if it expands to `/`.
-Creates a new build directory entry with the previously defined name in the crucible `tailings`.
+Creates a new build directory entry with the previously defined name in the crucible `molten`'s `artifacts` directory.
 The build directory is used for artifacts if the material default rituals support out-of-tree builds.
 The created material is created with the following attributes:
-- `build`: Build directory in the crucible's `tailings`.
+- `build`: Build directory in the crucible `molten`'s `artifacts` directory.
 - `source`: The given source directory.
 - `dependencies`: Empty array of other materials names this material depends upon.
 - `override`: Empty table of rituals to override.
