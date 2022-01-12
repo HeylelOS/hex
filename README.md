@@ -52,17 +52,15 @@ If you have suggestions or ideas concerning other build systems, feel free to co
 
 ## Configure, build and install
 
-CMake is used to configure, build and install binaires and documentations, version 3.14 minimum is required:
+Meson is used to configure, build and install binaries and manpages:
 
 ```sh
-mkdir -p build && cd build
-cmake ../
-cmake --build .
-cmake --install .
+meson setup build
+meson compile -C build
+meson install -C build
 ```
 
 ## Documentation
 
-Documentation is built mainly from markdown pages. If doxygen is available,
-you can build it using the `doc` rule with cmake.
+Documentation is built mainly from markdown pages. They're available in the `docs` top level directory.
 

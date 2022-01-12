@@ -325,7 +325,6 @@ lua_fs_remove(lua_State *L) {
 static bool
 fs_parent_separator(const char *path, char **separatorp) {
 	char *separator = strchr(path, '/');
-	bool isend;
 
 	if (separator != NULL) {
 
